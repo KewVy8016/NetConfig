@@ -192,11 +192,10 @@ Badge always includes `.badge-dot` (colored dot) + text label.
 - Actions: right-aligned buttons
 - Triggered by: Delete, Save Config, Remove Protocol
 
-### Drawer (Right Panel)
+### Command Preview Dialog
 
-- Width: 520px
-- Slide-in from right
-- Used for: Command Preview
+- Centered in the viewport, maximum width 672px
+- Used for: Command Preview only
 - Header + scrollable body + footer actions
 
 ### Toast
@@ -258,7 +257,7 @@ Badge always includes `.badge-dot` (colored dot) + text label.
 
 | Tab | Content |
 |---|---|
-| Interfaces | Interface table with IP, Mask, Status, Protocol, Method and an Admin State toggle at the end of each row. Toggle creates a preview for Shutdown/No Shutdown; Apply remains explicit in the preview drawer. Configure Interface remains inline; other configuration profiles open in a dialog popup. |
+| Interfaces | Interface table with IP, Mask, Status, Protocol, Method and an Admin State toggle at the end of each row. Toggle creates a preview for Shutdown/No Shutdown; Apply remains explicit in the preview dialog. Configure Interface remains inline; other configuration profiles open in a dialog popup. |
 | Routing | Protocol selector (OSPF/RIP/EIGRP/BGP/Static). Network tables with inline edit/delete. Add Network form. |
 | Show | Shortcut buttons grouped by category (Interfaces, Routing, System). Raw + Table view. Copy, Clear, timestamp. |
 | CLI | Dark terminal with prompt. Command history via arrow keys. Copy, Clear, Disconnect buttons. |
@@ -287,14 +286,13 @@ an interface that already exists. A compact **Additional Configuration** launche
 forms in a centered dialog: Loopback for every node, plus L2 Access Port, L3 Routed Port, and
 VLAN/SVI for nodes saved as Switch. The dialog closes with its close button, backdrop, or Escape;
 opening/closing it never sends commands. Preview closes the dialog and opens the common command
-preview drawer. Each form dialog is mounted at the page root and centered in the viewport rather
-than within the scrolled Interface layout; on shorter screens the dialog body scrolls internally.
+preview dialog.
 
 The Loopback dialog lets a user enter a non-negative
 Loopback number, IPv4 address, subnet mask, optional description, and administrative state. The
 number is intentionally not sourced from the inventory because a new Loopback does not yet exist
 in `show ip interface brief`. Existing Loopbacks are shown below that form and may be selected for
-**Remove Loopback**. Create and remove open the same command-preview drawer; Apply remains an
+**Remove Loopback**. Create and remove open the same command-preview dialog; Apply remains an
 explicit action, and removing a Loopback requires a confirmation. Neither action writes NVRAM.
 
 Above the interface forms, a compact **Device capability** status reports support discovered by
@@ -316,14 +314,14 @@ infers one from an entered name.
 | L2 access port | Existing physical interface, VLAN ID, description, admin state | `interface`, `switchport mode access`, `switchport access vlan`, description, shutdown state | Available only when current switchport state is Enabled; VLAN ID must be 1–4094. |
 | VLAN/SVI | VLAN ID/name plus SVI IPv4/mask, description, admin state | VLAN resource commands and separate `interface Vlan<ID>` commands | Create/remove resources are distinct. Delete requires confirmation and must state whether VLAN/SVI exists. |
 
-Every profile uses the common command-preview drawer and result/history states. A profile remains
+Every profile uses the common command-preview dialog and result/history states. A profile remains
 disabled while capability or interface inventory is loading, unavailable, or stale. The L3/L2
 configuration forms have a visible warning icon plus Thai explanatory text, not colour alone.
 After selection, the backend reads `show interfaces <selected-interface>` and prefills the
 current IPv4 address, dotted-decimal subnet mask, description and administrative state.
 Preview stays disabled while this current-state read is pending.
 
-When Apply returns an overall **success**, the preview drawer shows the per-command result briefly,
+When Apply returns an overall **success**, the preview dialog shows the per-command result briefly,
 refreshes the relevant inventory/state, then closes itself automatically. A failed or partial result
 stays open so the user can read the error and take recovery action.
 
@@ -362,7 +360,7 @@ stays open so the user can read the error and take recovery action.
 - Table: Destination, Mask, Next Hop, Type, Actions
 - Inline add form at bottom
 
-### Command Preview (Right Drawer)
+### Command Preview (Centered Dialog)
 - Line numbers, monospace font
 - Copy All Commands
 - Cancel / Apply buttons

@@ -219,7 +219,8 @@ input:checked + .toggle-thumb::before {
 }
 
 .drawer-panel {
-  @apply fixed right-0 top-0 h-full w-[520px] bg-white shadow-xl z-50 flex flex-col;
+  @apply fixed left-1/2 top-1/2 z-50 flex w-[calc(100vw-2rem)] max-w-2xl -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl bg-white shadow-xl;
+  max-height: calc(100dvh - 2rem);
 }
 
 /* Toast */
