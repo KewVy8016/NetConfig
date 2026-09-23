@@ -1,0 +1,2 @@
+{# Template ลบ Static/Default route; ต้องระบุ target เดิมเพื่อไม่ลบ route อื่นเกินขอบเขต #}
+no ip route {{ destination }} {{ subnet_mask }} {{ next_hop if next_hop else exit_interface }}

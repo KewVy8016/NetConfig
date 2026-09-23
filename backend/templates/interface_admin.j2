@@ -1,0 +1,6 @@
+{# คำสั่งควบคุม admin state ของ interface โดยไม่แตะ IPv4 หรือ description #}
+{# ตัวแปร: interface_name, admin_up — ผ่าน validation จาก InterfaceAdminConfig แล้ว #}
+interface {{ interface_name }}
+{% if admin_up %} no shutdown
+{% else %} shutdown
+{% endif %}

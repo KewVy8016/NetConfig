@@ -1,0 +1,11 @@
+interface {{ interface_name }}
+ switchport mode access
+ switchport access vlan {{ vlan_id }}
+{% if description %}
+ description {{ description }}
+{% endif %}
+{% if admin_up %}
+ no shutdown
+{% else %}
+ shutdown
+{% endif %}

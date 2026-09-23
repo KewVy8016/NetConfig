@@ -1,0 +1,1695 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>R1 — NetConfig</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --sidebar-bg: #0F172A; --sidebar-text: #94A3B8; --sidebar-active: #1E293B;
+      --sidebar-hover: #1E293B; --sidebar-brand: #FFFFFF; --sidebar-width: 240px;
+      --bg: #F8FAFC; --surface: #FFFFFF; --fg: #0F172A; --muted: #64748B;
+      --border: #E2E8F0; --accent: #2563EB; --accent-soft: #DBEAFE;
+      --cyan: #0891B2; --cyan-soft: #CFFAFE;
+      --green: #16A34A; --green-soft: #DCFCE7;
+      --red: #DC2626; --red-soft: #FEE2E2;
+      --amber: #D97706; --amber-soft: #FEF3C7;
+      --gray: #64748B; --gray-soft: #F1F5F9;
+      --terminal-bg: #0B1120; --terminal-text: #E2E8F0; --terminal-border: #1E293B;
+      --font-body: 'Noto Sans Thai', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+      --fs-xs: 12px; --fs-sm: 13px; --fs-base: 14px; --fs-md: 15px;
+      --fs-lg: 16px; --fs-xl: 18px; --fs-2xl: 22px;
+      --radius: 8px; --radius-lg: 12px; --radius-sm: 6px; --radius-full: 999px;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -2px rgba(0,0,0,0.05);
+      --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08);
+      --shadow-drawer: -4px 0 24px rgba(0,0,0,0.12);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: var(--fs-base); line-height: 1.5; -webkit-font-smoothing: antialiased; }
+    a { color: inherit; text-decoration: none; }
+    button { font: inherit; cursor: pointer; border: none; background: none; }
+    table { border-collapse: collapse; width: 100%; }
+
+    .app { display: flex; min-height: 100vh; }
+
+    /* Sidebar */
+    .sidebar { width: var(--sidebar-width); background: var(--sidebar-bg); color: var(--sidebar-text); display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; z-index: 20; transition: transform 0.2s ease, width 0.2s ease; }
+    .sidebar-brand { padding: 20px 20px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .sidebar-brand h1 { font-size: var(--fs-xl); font-weight: 700; color: var(--sidebar-brand); letter-spacing: -0.02em; }
+    .sidebar-brand span { display: block; font-size: var(--fs-xs); color: var(--sidebar-text); margin-top: 2px; opacity: 0.7; }
+    .sidebar-nav { flex: 1; padding: 12px 8px; display: flex; flex-direction: column; gap: 2px; }
+    .sidebar-link { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: var(--radius); font-size: var(--fs-base); color: var(--sidebar-text); transition: background 0.12s, color 0.12s; }
+    .sidebar-link:hover { background: var(--sidebar-hover); color: #E2E8F0; }
+    .sidebar-link.active { background: var(--sidebar-active); color: #FFFFFF; }
+    .sidebar-link svg { width: 18px; height: 18px; opacity: 0.7; flex-shrink: 0; }
+    .sidebar-link.active svg { opacity: 1; }
+    .sidebar-link.disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
+    .sidebar-badge { margin-left: auto; background: var(--accent); color: #fff; font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: var(--radius-full); }
+    .sidebar-section { font-size: var(--fs-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: rgba(148,163,184,0.5); padding: 16px 12px 6px; }
+    .sidebar-footer { padding: 16px 12px; border-top: 1px solid rgba(255,255,255,0.06); }
+    .sidebar-footer .version { font-family: var(--font-mono); font-size: var(--fs-xs); color: rgba(148,163,184,0.4); }
+
+    /* Main */
+    .main { margin-left: var(--sidebar-width); flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+
+    /* Topbar */
+    .topbar { position: sticky; top: 0; z-index: 15; background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 0 28px; height: 56px; display: flex; align-items: center; justify-content: space-between; }
+    .topbar-left { display: flex; align-items: center; gap: 12px; }
+    .topbar-title { font-size: var(--fs-lg); font-weight: 600; }
+    .topbar-breadcrumb { font-size: var(--fs-sm); color: var(--muted); }
+    .topbar-right { display: flex; align-items: center; gap: 16px; }
+
+    /* Device Header */
+    .device-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 28px; border-bottom: 1px solid var(--border); background: var(--surface);
+    }
+    .device-info { display: flex; align-items: center; gap: 16px; }
+    .device-icon {
+      width: 40px; height: 40px; border-radius: var(--radius-lg);
+      background: var(--accent-soft); display: flex; align-items: center; justify-content: center; color: var(--accent);
+    }
+    .device-icon svg { width: 20px; height: 20px; }
+    .device-details h2 { font-size: var(--fs-xl); font-weight: 600; }
+    .device-meta { display: flex; gap: 16px; font-size: var(--fs-sm); color: var(--muted); margin-top: 2px; }
+    .device-meta span { display: flex; align-items: center; gap: 4px; }
+    .device-meta svg { width: 14px; height: 14px; }
+    .device-actions { display: flex; gap: 8px; }
+
+    /* Tabs */
+    .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); padding: 0 28px; background: var(--surface); overflow-x: auto; }
+    .tab {
+      padding: 10px 16px; font-size: var(--fs-base); font-weight: 500; color: var(--muted);
+      border-bottom: 2px solid transparent; transition: color 0.12s, border-color 0.12s;
+      margin-bottom: -1px; white-space: nowrap; cursor: pointer;
+    }
+    .tab:hover { color: var(--fg); }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .tab:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* Content */
+    .content { flex: 1; padding: 24px 28px; }
+
+    /* Buttons */
+    .btn { display: inline-flex; align-items: center; gap: 7px; padding: 8px 16px; border-radius: var(--radius); font-size: var(--fs-base); font-weight: 500; transition: all 0.12s; }
+    .btn svg { width: 16px; height: 16px; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: #1D4ED8; }
+    .btn-primary:disabled { background: #93C5FD; cursor: not-allowed; }
+    .btn-secondary { background: var(--surface); color: var(--fg); border: 1px solid var(--border); }
+    .btn-secondary:hover { border-color: #CBD5E1; background: var(--bg); }
+    .btn-danger { background: var(--red); color: #fff; }
+    .btn-danger:hover { background: #B91C1C; }
+    .btn-ghost { background: transparent; color: var(--muted); padding: 6px 10px; }
+    .btn-ghost:hover { color: var(--fg); background: var(--gray-soft); }
+    .btn-sm { padding: 5px 10px; font-size: var(--fs-sm); }
+    .btn-icon { padding: 7px; border-radius: var(--radius); }
+    .btn-icon:hover { background: var(--gray-soft); }
+
+    /* Badge */
+    .badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: var(--radius-full); font-size: var(--fs-xs); font-weight: 500; }
+    .badge-green { background: var(--green-soft); color: var(--green); }
+    .badge-red { background: var(--red-soft); color: var(--red); }
+    .badge-amber { background: var(--amber-soft); color: var(--amber); }
+    .badge-gray { background: var(--gray-soft); color: var(--gray); }
+    .badge-blue { background: var(--accent-soft); color: var(--accent); }
+    .badge-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .badge-green .badge-dot { background: var(--green); }
+    .badge-red .badge-dot { background: var(--red); }
+
+    /* Card */
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; box-shadow: var(--shadow-sm); }
+
+    /* Field */
+    .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+    .field-label { font-size: var(--fs-sm); font-weight: 500; }
+    .field-hint { font-size: var(--fs-xs); color: var(--muted); }
+    .input { padding: 9px 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--fg); font-size: var(--fs-base); transition: border-color 0.12s, box-shadow 0.12s; width: 100%; }
+    .input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+    .input::placeholder { color: #94A3B8; }
+    select.input { appearance: none; background-image: url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 32px; }
+
+    /* Table */
+    .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ds-table { width: 100%; font-size: var(--fs-base); }
+    .ds-table th { text-align: left; padding: 10px 16px; font-size: var(--fs-xs); font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; background: var(--bg); border-bottom: 1px solid var(--border); }
+    .ds-table td { padding: 12px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .ds-table tbody tr:last-child td { border-bottom: none; }
+    .ds-table tbody tr:hover { background: #F8FAFC; }
+    .ds-table .mono { font-family: var(--font-mono); font-size: var(--fs-sm); }
+
+    /* Toggle */
+    .toggle { position: relative; width: 40px; height: 22px; border-radius: 11px; background: #CBD5E1; cursor: pointer; transition: background 0.15s; flex-shrink: 0; }
+    .toggle.on { background: var(--green); }
+    .toggle::after { content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.15); transition: transform 0.15s; }
+    .toggle.on::after { transform: translateX(18px); }
+
+    /* ─── Routing — Enterprise Panel ────────────────────────────── */
+    .routing-panel {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+      overflow: hidden; display: flex; flex-direction: column;
+    }
+    .routing-summary {
+      display: flex; align-items: center; gap: 20px; padding: 14px 24px;
+      background: var(--bg); border-bottom: 1px solid var(--border); font-size: var(--fs-sm);
+    }
+    .routing-summary-item { display: flex; align-items: center; gap: 6px; }
+    .routing-summary-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .routing-summary-label { color: var(--muted); }
+    .routing-summary-value { font-weight: 600; font-family: var(--font-mono); color: var(--fg); }
+
+    .routing-body { display: flex; flex-direction: column; }
+
+    /* Protocol Selector Bar */
+    .proto-selector {
+      display: flex; gap: 0; border-bottom: 1px solid var(--border); background: var(--surface);
+      overflow-x: auto; padding: 0 16px;
+    }
+    .proto-tab {
+      display: flex; align-items: center; gap: 8px; padding: 12px 18px;
+      font-size: var(--fs-sm); font-weight: 500; color: var(--muted);
+      border-bottom: 2px solid transparent; white-space: nowrap; cursor: pointer;
+      transition: color 0.12s, border-color 0.12s; margin-bottom: -1px;
+    }
+    .proto-tab:hover { color: var(--fg); }
+    .proto-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .proto-tab .proto-dot { width: 7px; height: 7px; border-radius: 50%; }
+    .proto-tab .proto-dot.on { background: var(--green); }
+    .proto-tab .proto-dot.off { background: var(--gray); }
+    .proto-tab-count {
+      font-size: 11px; font-family: var(--font-mono); background: var(--gray-soft);
+      color: var(--muted); padding: 0 6px; border-radius: var(--radius-full); line-height: 18px;
+    }
+    .proto-tab.active .proto-tab-count { background: var(--accent-soft); color: var(--accent); }
+
+    /* Protocol Detail View */
+    .proto-view { display: none; padding: 24px; flex-direction: column; gap: 20px; }
+    .proto-view.active { display: flex; }
+
+    .proto-view-header { display: flex; align-items: center; justify-content: space-between; }
+    .proto-view-header-left { display: flex; align-items: center; gap: 14px; }
+    .proto-view-icon {
+      width: 40px; height: 40px; border-radius: var(--radius); display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; font-family: var(--font-mono); border: 1px solid var(--border);
+    }
+    .proto-view-icon.on { background: rgba(22,163,74,0.06); color: var(--green); border-color: rgba(22,163,74,0.15); }
+    .proto-view-icon.off { background: var(--gray-soft); color: var(--muted); }
+    .proto-view-title { font-size: var(--fs-lg); font-weight: 600; margin: 0; }
+    .proto-view-sub { font-size: var(--fs-sm); color: var(--muted); margin-top: 2px; }
+    .proto-view-actions { display: flex; align-items: center; gap: 8px; }
+
+    /* Section inside proto view */
+    .proto-section { display: flex; flex-direction: column; gap: 12px; }
+    .proto-section-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding-bottom: 10px; border-bottom: 1px solid var(--border);
+    }
+    .proto-section-title { font-size: var(--fs-sm); font-weight: 600; color: var(--fg); }
+    .proto-section-count { font-size: var(--fs-xs); color: var(--muted); }
+
+    /* Editable Table */
+    .edit-table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+    .edit-table th {
+      text-align: left; padding: 8px 12px; font-size: 11px; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.05em; background: var(--bg);
+      border-bottom: 1px solid var(--border);
+    }
+    .edit-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .edit-table tbody tr:last-child td { border-bottom: none; }
+    .edit-table tbody tr:hover { background: #F8FAFC; }
+    .edit-table tbody tr.editing { background: var(--accent-soft); }
+    .edit-table .cell-actions { display: flex; gap: 2px; justify-content: flex-end; }
+
+    .edit-banner {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 14px; background: var(--accent-soft); border: 1px solid #93C5FD;
+      border-radius: var(--radius); font-size: var(--fs-sm); color: var(--accent);
+    }
+    .edit-banner strong { font-weight: 600; }
+
+    /* Inline Add Form */
+    .inline-form {
+      background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px;
+    }
+    .inline-form-title { font-size: var(--fs-sm); font-weight: 600; color: var(--fg); margin-bottom: 12px; }
+    .inline-form-grid { display: grid; gap: 12px; }
+    .inline-form-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .inline-form-grid-2 { grid-template-columns: 1fr 1fr; }
+    .inline-form-grid-1 { grid-template-columns: 1fr; }
+    .inline-form-footer { display: flex; gap: 8px; margin-top: 14px; }
+    .form-context {
+      padding: 10px 14px; background: var(--gray-soft); border-radius: var(--radius);
+      font-size: var(--fs-sm); color: var(--muted); display: flex; align-items: center; gap: 8px;
+    }
+
+    .empty-state {
+      text-align: center; padding: 32px 24px; color: var(--muted);
+    }
+    .empty-state p { font-size: var(--fs-sm); margin-top: 8px; }
+
+    @media (max-width: 1024px) {
+      .inline-form-grid-3, .inline-form-grid-2 { grid-template-columns: 1fr; }
+      .proto-selector { padding: 0 8px; }
+      .proto-view { padding: 16px; }
+    }
+
+    /* Show shortcuts */
+    .show-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin-bottom: 20px; }
+    .show-btn { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); font-size: var(--fs-sm); font-family: var(--font-mono); color: var(--fg); transition: all 0.12s; }
+    .show-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* Terminal */
+    .terminal { background: var(--terminal-bg); border: 1px solid var(--terminal-border); border-radius: var(--radius-lg); font-family: var(--font-mono); font-size: 13px; color: var(--terminal-text); overflow: hidden; }
+    .terminal-header { padding: 10px 16px; border-bottom: 1px solid var(--terminal-border); display: flex; align-items: center; justify-content: space-between; }
+    .terminal-dots { display: flex; gap: 6px; }
+    .terminal-dots span { width: 10px; height: 10px; border-radius: 50%; }
+    .terminal-dots .red { background: #EF4444; }
+    .terminal-dots .yellow { background: #F59E0B; }
+    .terminal-dots .green { background: #22C55E; }
+    .terminal-body { padding: 16px; min-height: 340px; max-height: 500px; overflow-y: auto; line-height: 1.7; }
+    .terminal-line { display: flex; gap: 0; }
+    .terminal-prompt { color: var(--green); white-space: nowrap; }
+    .terminal-output { color: #94A3B8; }
+    .terminal-cursor { display: inline-block; width: 8px; height: 15px; background: var(--green); animation: blink 1s step-end infinite; vertical-align: middle; }
+    @keyframes blink { 50% { opacity: 0; } }
+    .terminal-input { color: #fff; }
+
+    /* Drawer */
+    .drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 30; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+    .drawer-overlay.open { opacity: 1; pointer-events: auto; }
+    .drawer { position: fixed; top: 0; right: 0; bottom: 0; width: 520px; max-width: 100%; background: var(--surface); box-shadow: var(--shadow-drawer); z-index: 31; transform: translateX(100%); transition: transform 0.25s ease; display: flex; flex-direction: column; }
+    .drawer.open { transform: translateX(0); }
+    .drawer-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .drawer-header h3 { font-size: var(--fs-lg); font-weight: 600; }
+    .drawer-body { flex: 1; overflow-y: auto; padding: 20px; }
+    .drawer-footer { padding: 16px 20px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; }
+
+    /* Dialog */
+    .dialog-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 40; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.15s; }
+    .dialog-overlay.open { opacity: 1; pointer-events: auto; }
+    .dialog { background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); width: 420px; max-width: 90vw; padding: 24px; }
+    .dialog h3 { font-size: var(--fs-lg); font-weight: 600; margin-bottom: 8px; }
+    .dialog p { color: var(--muted); font-size: var(--fs-base); margin-bottom: 20px; line-height: 1.5; }
+    .dialog-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+    /* Toast */
+    .toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 50; display: flex; flex-direction: column; gap: 8px; }
+    .toast { background: var(--sidebar-bg); color: #fff; padding: 12px 16px; border-radius: var(--radius); font-size: var(--fs-sm); box-shadow: var(--shadow-lg); display: flex; align-items: center; gap: 10px; min-width: 280px; animation: slideIn 0.2s ease; }
+    .toast-success { border-left: 3px solid var(--green); }
+    .toast-error { border-left: 3px solid var(--red); }
+    @keyframes slideIn { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+    /* Code block */
+    .code-block { background: var(--terminal-bg); border: 1px solid var(--terminal-border); border-radius: var(--radius); padding: 16px; font-family: var(--font-mono); font-size: 13px; line-height: 1.7; color: var(--terminal-text); overflow-x: auto; }
+
+    /* ─── Sidebar Collapse (Desktop) ────────────────────────────── */
+    .sidebar-toggle {
+      padding: 8px;
+      border-radius: var(--radius);
+    }
+    .sidebar-toggle:hover { background: var(--gray-soft); }
+
+    .sidebar.collapsed {
+      width: 64px;
+    }
+    .sidebar.collapsed .sidebar-brand h1,
+    .sidebar.collapsed .sidebar-brand span,
+    .sidebar.collapsed .sidebar-link span:not(.sidebar-badge),
+    .sidebar.collapsed .sidebar-section,
+    .sidebar.collapsed .sidebar-footer .version {
+      display: none;
+    }
+    .sidebar.collapsed .sidebar-brand {
+      padding: 20px 0 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .sidebar.collapsed .sidebar-brand h1 {
+      display: block;
+      font-size: var(--fs-sm);
+      width: auto;
+    }
+    .sidebar.collapsed .sidebar-nav {
+      padding: 12px 8px;
+      align-items: center;
+    }
+    .sidebar.collapsed .sidebar-link {
+      justify-content: center;
+      padding: 10px;
+      position: relative;
+    }
+    .sidebar.collapsed .sidebar-badge {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      margin-left: 0;
+      padding: 0 5px;
+      font-size: 10px;
+      min-width: 16px;
+      height: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .sidebar.collapsed ~ .sidebar-overlay { display: none !important; }
+    .sidebar.collapsed .sidebar-footer { padding: 16px 8px; text-align: center; }
+
+    .main {
+      margin-left: var(--sidebar-width);
+      transition: margin-left 0.2s ease;
+    }
+    .sidebar.collapsed ~ .main {
+      margin-left: 64px;
+    }
+
+    /* ─── Responsive (Tablet) ────────────────────────────────────── */
+    .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 19; }
+
+    @media (max-width: 1024px) {
+      .sidebar { transform: translateX(-100%); width: 240px; }
+      .sidebar.open { transform: translateX(0); }
+      .sidebar.collapsed { width: 240px; }
+      .sidebar.collapsed .sidebar-brand h1,
+      .sidebar.collapsed .sidebar-brand span,
+      .sidebar.collapsed .sidebar-link span:not(.sidebar-badge),
+      .sidebar.collapsed .sidebar-section,
+      .sidebar.collapsed .sidebar-footer .version {
+        display: revert;
+      }
+      .sidebar.collapsed .sidebar-brand {
+        padding: 20px 20px 16px;
+        display: block;
+      }
+      .sidebar.collapsed .sidebar-nav {
+        padding: 12px 8px;
+        align-items: stretch;
+      }
+      .sidebar.collapsed .sidebar-link {
+        justify-content: flex-start;
+        padding: 9px 12px;
+        position: static;
+      }
+      .sidebar.collapsed .sidebar-badge {
+        position: static;
+        margin-left: auto;
+        padding: 1px 7px;
+        font-size: 11px;
+        min-width: auto;
+        height: auto;
+      }
+      .sidebar.collapsed .sidebar-footer { padding: 16px 12px; text-align: left; }
+      .main { margin-left: 0 !important; }
+      .sidebar.open ~ .sidebar-overlay { display: block; }
+      .device-header { flex-direction: column; gap: 12px; align-items: flex-start; }
+      .device-actions { width: 100%; }
+    }
+
+    /* Spinner */
+    .spinner { width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.6s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* Apply result lines */
+    .apply-line { display: flex; gap: 10px; padding: 6px 0; font-family: var(--font-mono); font-size: 13px; border-bottom: 1px solid var(--border); }
+    .apply-line:last-child { border-bottom: none; }
+    .apply-line .status-icon { width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand"><h1>NetConfig</h1><span>Network Operations Console</span></div>
+      <nav class="sidebar-nav">
+        <a href="index.html" class="sidebar-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          <span>Nodes</span> <span class="sidebar-badge">4</span>
+        </a>
+        <a href="history.html" class="sidebar-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span>Command History</span>
+        </a>
+
+      </nav>
+      <div class="sidebar-footer"><span class="version">v1.0.0-beta</span></div>
+    </aside>
+    <div class="sidebar-overlay" onclick="document.getElementById('sidebar').classList.remove('open')"></div>
+
+    <div class="main">
+      <!-- Topbar -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="sidebar-toggle btn-icon" id="sidebar-toggle" onclick="toggleSidebar()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <a href="index.html" class="btn btn-ghost btn-sm" style="gap: 6px; color: var(--muted); padding: 4px 8px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+            Nodes
+          </a>
+          <span class="topbar-breadcrumb">/ R1</span>
+        </div>
+      </header>
+
+      <!-- Device Header -->
+      <div class="device-header">
+        <div class="device-info">
+          <div class="device-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="6" y1="10" x2="6" y2="10.01"/><line x1="10" y1="10" x2="10" y2="10.01"/><line x1="14" y1="10" x2="14" y2="10.01"/><line x1="18" y1="10" x2="18" y2="10.01"/></svg>
+          </div>
+          <div class="device-details">
+            <h2>R1</h2>
+            <div class="device-meta">
+              <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> 192.168.1.11</span>
+              <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/></svg> Router · Telnet</span>
+              <span class="badge badge-green"><span class="badge-dot"></span> Connected</span>
+            </div>
+          </div>
+        </div>
+        <div class="device-actions">
+          <button class="btn btn-secondary btn-sm" onclick="showDialog('save-dialog')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
+            Save Config
+          </button>
+          <button class="btn btn-secondary btn-sm" onclick="showToast('Reconnecting...', 'success')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            Reconnect
+          </button>
+          <button class="btn btn-ghost btn-sm" style="color: var(--red);">Disconnect</button>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <!-- Router reference แสดง Routing; production Switch variant ต้องซ่อนแท็บ Routing -->
+        <button class="tab" onclick="switchTab('interfaces')">Interfaces</button>
+        <button class="tab active" onclick="switchTab('routing')">Routing</button>
+        <button class="tab" onclick="switchTab('show')">Show</button>
+        <button class="tab" onclick="switchTab('cli')">CLI</button>
+      </div>
+
+      <div class="content">
+        <!-- ===== INTERFACES TAB ===== -->
+        <div class="tab-content" id="tab-interfaces">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3 style="font-size: var(--fs-lg); font-weight: 600;">Interfaces</h3>
+            <div style="display: flex; gap: 8px;">
+            <button class="btn btn-secondary btn-sm" onclick="openLoopbackDialog()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add Loopback
+            </button>
+            <button class="btn btn-primary btn-sm" onclick="openInterfaceDialog()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Edit Interface
+            </button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="ds-table">
+              <thead>
+                <tr>
+                  <th>Interface</th>
+                  <th>IP Address</th>
+                  <th>Subnet Mask</th>
+                  <th>Status</th>
+                  <th>Protocol</th>
+                  <th>Method</th>
+                  <th style="text-align: right;">Admin State</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>GigabitEthernet0/0</strong></td>
+                  <td class="mono">192.168.1.11</td>
+                  <td class="mono">255.255.255.0</td>
+                  <td><span class="badge badge-green"><span class="badge-dot"></span> up</span></td>
+                  <td><span class="badge badge-green"><span class="badge-dot"></span> up</span></td>
+                  <td>manual</td>
+                  <td style="text-align: right;"><div style="display:inline-flex;align-items:center;gap:8px;"><div class="toggle on" role="switch" aria-checked="true" onclick="this.classList.toggle('on'); this.setAttribute('aria-checked', this.classList.contains('on'))"></div><span style="font-size:var(--fs-xs);color:var(--muted);">เปิด</span></div></td>
+                </tr>
+                <tr>
+                  <td><strong>GigabitEthernet0/1</strong></td>
+                  <td class="mono">10.0.12.1</td>
+                  <td class="mono">255.255.255.0</td>
+                  <td><span class="badge badge-green"><span class="badge-dot"></span> up</span></td>
+                  <td><span class="badge badge-green"><span class="badge-dot"></span> up</span></td>
+                  <td>manual</td>
+                  <td style="text-align: right;"><div style="display:inline-flex;align-items:center;gap:8px;"><div class="toggle" role="switch" aria-checked="false" onclick="this.classList.toggle('on'); this.setAttribute('aria-checked', this.classList.contains('on'))"></div><span style="font-size:var(--fs-xs);color:var(--muted);">ปิด</span></div></td>
+                </tr>
+                <tr>
+                  <td><strong>Serial0/0/0</strong></td>
+                  <td class="mono">10.0.23.1</td>
+                  <td class="mono">255.255.255.252</td>
+                  <td><span class="badge badge-red"><span class="badge-dot"></span> down</span></td>
+                  <td><span class="badge badge-red"><span class="badge-dot"></span> down</span></td>
+                  <td>manual</td>
+                  <td style="text-align: right;"><div style="display:inline-flex;align-items:center;gap:8px;"><div class="toggle on" role="switch" aria-checked="true" onclick="this.classList.toggle('on'); this.setAttribute('aria-checked', this.classList.contains('on'))"></div><span style="font-size:var(--fs-xs);color:var(--muted);">เปิด</span></div></td>
+                </tr>
+                <tr>
+                  <td><strong>Loopback0</strong></td>
+                  <td class="mono">1.1.1.1</td>
+                  <td class="mono">255.255.255.255</td>
+                  <td><span class="badge badge-green"><span class="badge-dot"></span> up</span></td>
+                  <td><span class="badge badge-green"><span class="badge-dot"></span> up</span></td>
+                  <td>manual</td>
+                  <td style="text-align: right;"><div style="display:inline-flex;align-items:center;gap:8px;"><div class="toggle" role="switch" aria-checked="false" onclick="this.classList.toggle('on'); this.setAttribute('aria-checked', this.classList.contains('on'))"></div><span style="font-size:var(--fs-xs);color:var(--muted);">ปิด</span></div></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <!-- Additional Configuration launchers: Configure Interface หลักยัง inline ใน production;
+               profile อื่นเปิด dialog และ production เลือกจาก real capability output ไม่เดาจากชื่อ node. -->
+          <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 16px;">
+            <button class="btn btn-secondary" style="height:auto;padding:14px;display:block;text-align:left;" onclick="openLoopbackDialog()"><span style="display:block;font-weight:600;font-size:var(--fs-sm);">Loopback</span><span style="display:block;font-size:var(--fs-xs);color:var(--muted);margin-top:4px;">Create or remove virtual interface · opens dialog</span></button>
+            <button class="btn btn-secondary" style="height:auto;padding:14px;display:block;text-align:left;"><span style="display:block;font-weight:600;font-size:var(--fs-sm);">L3 Routed Port</span><span style="display:block;font-size:var(--fs-xs);color:var(--muted);margin-top:4px;">no switchport before IPv4 · opens dialog</span></button>
+            <button class="btn btn-secondary" style="height:auto;padding:14px;display:block;text-align:left;"><span style="display:block;font-weight:600;font-size:var(--fs-sm);">L2 Access Port</span><span style="display:block;font-size:var(--fs-xs);color:var(--muted);margin-top:4px;">Access VLAN · description · opens dialog</span></button>
+            <button class="btn btn-secondary" style="height:auto;padding:14px;display:block;text-align:left;"><span style="display:block;font-weight:600;font-size:var(--fs-sm);">VLAN / SVI</span><span style="display:block;font-size:var(--fs-xs);color:var(--muted);margin-top:4px;">VLAN and Vlan&lt;ID&gt; · opens dialog</span></button>
+          </div>
+        </div>
+
+        <!-- ===== ROUTING TAB ===== -->
+        <div class="tab-content active" id="tab-routing">
+          <div class="routing-panel">
+            <!-- Summary Bar -->
+            <div class="routing-summary">
+              <span style="font-weight: 600; font-size: var(--fs-base); color: var(--fg);">Routing Table</span>
+              <span class="routing-summary-item">
+                <span class="routing-summary-dot" style="background: var(--green);"></span>
+                <span class="routing-summary-label">OSPF</span>
+                <span class="routing-summary-value">2 networks</span>
+              </span>
+              <span class="routing-summary-item">
+                <span class="routing-summary-dot" style="background: var(--green);"></span>
+                <span class="routing-summary-label">RIP</span>
+                <span class="routing-summary-value">1 network</span>
+              </span>
+              <span class="routing-summary-item">
+                <span class="routing-summary-dot" style="background: var(--gray);"></span>
+                <span class="routing-summary-label">EIGRP</span>
+                <span class="routing-summary-value">Off</span>
+              </span>
+              <span class="routing-summary-item">
+                <span class="routing-summary-dot" style="background: var(--gray);"></span>
+                <span class="routing-summary-label">BGP</span>
+                <span class="routing-summary-value">Off</span>
+              </span>
+              <span class="routing-summary-item">
+                <span class="routing-summary-dot" style="background: var(--amber);"></span>
+                <span class="routing-summary-label">Static</span>
+                <span class="routing-summary-value">3 routes</span>
+              </span>
+            </div>
+
+            <!-- Protocol Tabs -->
+            <div class="proto-selector">
+              <button class="proto-tab active" onclick="selectProto('ospf', this)">
+                <span class="proto-dot on"></span> OSPF
+                <span class="proto-tab-count">2</span>
+              </button>
+              <button class="proto-tab" onclick="selectProto('rip', this)">
+                <span class="proto-dot on"></span> RIP
+                <span class="proto-tab-count">1</span>
+              </button>
+              <button class="proto-tab" onclick="selectProto('eigrp', this)">
+                <span class="proto-dot"></span> EIGRP
+                <span class="proto-tab-count">0</span>
+              </button>
+              <button class="proto-tab" onclick="selectProto('bgp', this)">
+                <span class="proto-dot"></span> BGP
+                <span class="proto-tab-count">0</span>
+              </button>
+              <button class="proto-tab" onclick="selectProto('static', this)">
+                <span class="proto-dot" style="background: var(--amber);"></span> Static
+                <span class="proto-tab-count">3</span>
+              </button>
+            </div>
+
+            <div class="routing-body">
+
+              <!-- ===== OSPF View ===== -->
+              <div class="proto-view active" id="view-ospf">
+                <div class="proto-view-header">
+                  <div class="proto-view-header-left">
+                    <div class="proto-view-icon on">OSPF</div>
+                    <div>
+                      <div class="proto-view-title">OSPF — Open Shortest Path First</div>
+                      <div class="proto-view-sub">Process ID 1 · Router-ID 1.1.1.1 · Area 0</div>
+                    </div>
+                  </div>
+                  <div class="proto-view-actions">
+                    <span class="badge badge-green"><span class="badge-dot"></span> Active</span>
+                    <button class="btn btn-ghost btn-sm" style="color: var(--red);" onclick="showDialog('ospf-delete-dialog')">Remove</button>
+                  </div>
+                </div>
+
+                <div class="proto-section">
+                  <div class="proto-section-head">
+                    <span class="proto-section-title">Configured Networks</span>
+                    <span class="proto-section-count">2 entries</span>
+                  </div>
+                  <div class="edit-banner" id="ospf-edit-banner" style="display: none;">
+                    <span>Editing network entry <strong id="ospf-edit-label"></strong></span>
+                    <button class="btn btn-ghost btn-sm" onclick="cancelEdit('ospf')" style="color: var(--muted);">Cancel</button>
+                  </div>
+                  <table class="edit-table">
+                    <thead><tr><th>Network</th><th>Wildcard Mask</th><th>Area</th><th>Status</th><th style="text-align:right;">Actions</th></tr></thead>
+                    <tbody id="ospf-networks">
+                      <tr data-net-id="ospf-1">
+                        <td class="mono">10.0.12.0</td><td class="mono">0.0.0.255</td><td class="mono">0</td>
+                        <td><span class="badge badge-green" style="font-size:10px;">Applied</span></td>
+                        <td><div class="cell-actions">
+                          <button class="btn btn-ghost btn-sm" onclick="editNetwork('ospf','ospf-1','10.0.12.0','0.0.0.255','0')">Edit</button>
+                          <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="deleteNetwork('ospf','ospf-1','10.0.12.0')">Delete</button>
+                        </div></td>
+                      </tr>
+                      <tr data-net-id="ospf-2">
+                        <td class="mono">1.1.1.1</td><td class="mono">0.0.0.0</td><td class="mono">0</td>
+                        <td><span class="badge badge-green" style="font-size:10px;">Applied</span></td>
+                        <td><div class="cell-actions">
+                          <button class="btn btn-ghost btn-sm" onclick="editNetwork('ospf','ospf-2','1.1.1.1','0.0.0.0','0')">Edit</button>
+                          <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="deleteNetwork('ospf','ospf-2','1.1.1.1')">Delete</button>
+                        </div></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div class="inline-form">
+                  <div class="inline-form-title" id="ospf-form-title">Add Network</div>
+                  <div class="inline-form-grid inline-form-grid-3">
+                    <div class="field"><label class="field-label">Network</label><input type="text" class="input mono" id="ospf-net" placeholder="10.0.23.0" /></div>
+                    <div class="field"><label class="field-label">Wildcard Mask</label><input type="text" class="input mono" id="ospf-wc" placeholder="0.0.0.255" /></div>
+                    <div class="field"><label class="field-label">Area</label><input type="text" class="input mono" id="ospf-area" placeholder="0" value="0" /></div>
+                  </div>
+                  <div class="inline-form-footer" id="ospf-form-actions">
+                    <button class="btn btn-primary btn-sm" onclick="addOrUpdateNetwork('ospf')">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                      Add Network
+                    </button>
+                  </div>
+                </div>
+
+                <div style="display:flex; gap:8px; justify-content:flex-end; padding-top:4px; border-top: 1px solid var(--border);">
+                  <button class="btn btn-ghost btn-sm" onclick="openPreview('ospf-view')">View Full Config</button>
+                  <button class="btn btn-primary btn-sm" onclick="openPreview('ospf-add')">Preview Changes</button>
+                </div>
+              </div>
+
+              <!-- ===== RIP View ===== -->
+              <div class="proto-view" id="view-rip">
+                <div class="proto-view-header">
+                  <div class="proto-view-header-left">
+                    <div class="proto-view-icon on">RIP</div>
+                    <div>
+                      <div class="proto-view-title">RIP — Routing Information Protocol</div>
+                      <div class="proto-view-sub">Version 2 · 1 network advertised</div>
+                    </div>
+                  </div>
+                  <div class="proto-view-actions">
+                    <span class="badge badge-green"><span class="badge-dot"></span> Active</span>
+                    <button class="btn btn-ghost btn-sm" style="color: var(--red);" onclick="showDialog('rip-delete-dialog')">Remove</button>
+                  </div>
+                </div>
+
+                <div class="proto-section">
+                  <div class="proto-section-head">
+                    <span class="proto-section-title">Advertised Networks</span>
+                    <span class="proto-section-count">1 entry</span>
+                  </div>
+                  <div class="edit-banner" id="rip-edit-banner" style="display: none;">
+                    <span>Editing network entry <strong id="rip-edit-label"></strong></span>
+                    <button class="btn btn-ghost btn-sm" onclick="cancelEdit('rip')" style="color: var(--muted);">Cancel</button>
+                  </div>
+                  <table class="edit-table">
+                    <thead><tr><th>Network</th><th>Status</th><th style="text-align:right;">Actions</th></tr></thead>
+                    <tbody id="rip-networks">
+                      <tr data-net-id="rip-1">
+                        <td class="mono">10.0.0.0</td>
+                        <td><span class="badge badge-green" style="font-size:10px;">Applied</span></td>
+                        <td><div class="cell-actions">
+                          <button class="btn btn-ghost btn-sm" onclick="editNetwork('rip','rip-1','10.0.0.0')">Edit</button>
+                          <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="deleteNetwork('rip','rip-1','10.0.0.0')">Delete</button>
+                        </div></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div class="inline-form">
+                  <div class="inline-form-title" id="rip-form-title">Add Network</div>
+                  <div class="inline-form-grid inline-form-grid-1">
+                    <div class="field" style="margin-bottom:0;">
+                      <label class="field-label">Network to Advertise</label>
+                      <input type="text" class="input mono" id="rip-net" placeholder="172.16.0.0" />
+                      <span class="field-hint">Advertised via RIP version 2 updates</span>
+                    </div>
+                  </div>
+                  <div class="inline-form-footer" id="rip-form-actions">
+                    <button class="btn btn-primary btn-sm" onclick="addOrUpdateNetwork('rip')">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                      Add Network
+                    </button>
+                  </div>
+                </div>
+
+                <div style="display:flex; gap:8px; justify-content:flex-end; padding-top:4px; border-top: 1px solid var(--border);">
+                  <button class="btn btn-ghost btn-sm" onclick="openPreview('rip-view')">View Full Config</button>
+                  <button class="btn btn-primary btn-sm" onclick="openPreview('rip-add')">Preview Changes</button>
+                </div>
+              </div>
+
+              <!-- ===== EIGRP View ===== -->
+              <div class="proto-view" id="view-eigrp">
+                <div class="proto-view-header">
+                  <div class="proto-view-header-left">
+                    <div class="proto-view-icon">EIGRP</div>
+                    <div>
+                      <div class="proto-view-title">EIGRP — Enhanced Interior Gateway Routing Protocol</div>
+                      <div class="proto-view-sub">AS 100 · Not configured</div>
+                    </div>
+                  </div>
+                  <div class="proto-view-actions">
+                    <span class="badge badge-gray">Off</span>
+                    <button class="btn btn-ghost btn-sm" style="color: var(--red); opacity: 0.4; cursor: not-allowed;" disabled onclick="showDialog('eigrp-delete-dialog')">Remove</button>
+                  </div>
+                </div>
+
+                <div class="proto-section">
+                  <div class="proto-section-head">
+                    <span class="proto-section-title">Configure EIGRP</span>
+                  </div>
+                  <div class="inline-form">
+                    <div class="inline-form-title">Setup EIGRP Process</div>
+                    <div class="inline-form-grid inline-form-grid-2">
+                      <div class="field"><label class="field-label">AS Number</label><input type="text" class="input mono" id="eigrp-as" placeholder="100" /><span class="field-hint">Autonomous System number (1–65535)</span></div>
+                      <div class="field"><label class="field-label">Router-ID</label><input type="text" class="input mono" id="eigrp-rid" placeholder="2.2.2.2" /><span class="field-hint">Loopback IP for router identification</span></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="proto-section">
+                  <div class="proto-section-head">
+                    <span class="proto-section-title">Networks</span>
+                    <span class="proto-section-count">0 entries</span>
+                  </div>
+                  <div style="padding: 20px; text-align: center; color: var(--muted); font-size: var(--fs-sm); border: 1px dashed var(--border); border-radius: var(--radius); background: var(--bg);">
+                    No networks configured yet. Enable EIGRP first, then add networks.
+                  </div>
+                  <div class="inline-form" style="margin-top: 12px;">
+                    <div class="inline-form-title" id="eigrp-form-title">Add Network</div>
+                    <div class="inline-form-grid inline-form-grid-2">
+                      <div class="field"><label class="field-label">Network</label><input type="text" class="input mono" id="eigrp-net" placeholder="10.0.0.0" /></div>
+                      <div class="field"><label class="field-label">Wildcard Mask</label><input type="text" class="input mono" id="eigrp-wc" placeholder="0.0.255.255" /></div>
+                    </div>
+                    <div class="inline-form-footer" id="eigrp-form-actions">
+                      <button class="btn btn-primary btn-sm" onclick="addOrUpdateNetwork('eigrp')">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        Add Network
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div style="display:flex; gap:8px; justify-content:flex-end; padding-top:4px; border-top: 1px solid var(--border);">
+                  <button class="btn btn-ghost btn-sm" onclick="openPreview('eigrp-view')">View Full Config</button>
+                  <button class="btn btn-primary btn-sm" onclick="openPreview('eigrp-add')">Preview &amp; Enable</button>
+                </div>
+              </div>
+
+              <!-- ===== BGP View ===== -->
+              <div class="proto-view" id="view-bgp">
+                <div class="proto-view-header">
+                  <div class="proto-view-header-left">
+                    <div class="proto-view-icon">BGP</div>
+                    <div>
+                      <div class="proto-view-title">BGP — Border Gateway Protocol</div>
+                      <div class="proto-view-sub">AS 65001 · Not configured</div>
+                    </div>
+                  </div>
+                  <div class="proto-view-actions">
+                    <span class="badge badge-gray">Off</span>
+                    <button class="btn btn-ghost btn-sm" style="color: var(--red); opacity: 0.4; cursor: not-allowed;" disabled onclick="showDialog('bgp-delete-dialog')">Remove</button>
+                  </div>
+                </div>
+
+                <div class="proto-section">
+                  <div class="proto-section-head">
+                    <span class="proto-section-title">Configure BGP</span>
+                  </div>
+                  <div class="inline-form">
+                    <div class="inline-form-title">Setup BGP Process</div>
+                    <div class="inline-form-grid inline-form-grid-2">
+                      <div class="field"><label class="field-label">Local AS</label><input type="text" class="input mono" id="bgp-local-as" placeholder="65001" /><span class="field-hint">Your Autonomous System number</span></div>
+                      <div class="field"><label class="field-label">Router-ID</label><input type="text" class="input mono" id="bgp-rid" placeholder="3.3.3.3" /><span class="field-hint">Loopback IP for BGP identification</span></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="proto-section">
+                  <div class="proto-section-head">
+                    <span class="proto-section-title">Neighbor Relationships</span>
+                    <span class="proto-section-count">0 entries</span>
+                  </div>
+                  <div style="padding: 20px; text-align: center; color: var(--muted); font-size: var(--fs-sm); border: 1px dashed var(--border); border-radius: var(--radius); background: var(--bg);">
+                    No neighbors configured. Enable BGP first, then add neighbors.
+                  </div>
+                  <div class="inline-form" style="margin-top: 12px;">
+                    <div class="inline-form-title" id="bgp-neighbor-form-title">Add Neighbor</div>
+                    <div class="inline-form-grid inline-form-grid-3">
+                      <div class="field"><label class="field-label">Neighbor IP</label><input type="text" class="input mono" id="bgp-nbr-ip" placeholder="10.0.23.2" /></div>
+                      <div class="field"><label class="field-label">Remote AS</label><input type="text" class="input mono" id="bgp-nbr-as" placeholder="65002" /></div>
+                      <div class="field"><label class="field-label">Description</label><input type="text" class="input" id="bgp-nbr-desc" placeholder="R2 peer" /></div>
+                    </div>
+                    <div class="inline-form-footer" id="bgp-neighbor-form-actions">
+                      <button class="btn btn-primary btn-sm" onclick="addOrUpdateNetwork('bgp')">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        Add Neighbor
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="proto-section">
+                  <div class="proto-section-head">
+                    <span class="proto-section-title">Network Advertisements</span>
+                    <span class="proto-section-count">0 entries</span>
+                  </div>
+                  <div style="padding: 20px; text-align: center; color: var(--muted); font-size: var(--fs-sm); border: 1px dashed var(--border); border-radius: var(--radius); background: var(--bg);">
+                    No networks advertised. Add a network to advertise via BGP.
+                  </div>
+                  <div class="inline-form" style="margin-top: 12px;">
+                    <div class="inline-form-title" id="bgp-network-form-title">Advertise Network</div>
+                    <div class="inline-form-grid inline-form-grid-2">
+                      <div class="field"><label class="field-label">Network</label><input type="text" class="input mono" id="bgp-net" placeholder="192.168.1.0" /></div>
+                      <div class="field"><label class="field-label">Mask</label><input type="text" class="input mono" id="bgp-mask" placeholder="255.255.255.0" /></div>
+                    </div>
+                    <div class="inline-form-footer" id="bgp-network-form-actions">
+                      <button class="btn btn-primary btn-sm" onclick="addOrUpdateNetwork('bgp-network')">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        Advertise Network
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div style="display:flex; gap:8px; justify-content:flex-end; padding-top:4px; border-top: 1px solid var(--border);">
+                  <button class="btn btn-ghost btn-sm" onclick="openPreview('bgp-view')">View Full Config</button>
+                  <button class="btn btn-primary btn-sm" onclick="openPreview('bgp-add')">Preview &amp; Enable</button>
+                </div>
+              </div>
+
+              <!-- ===== Static Routes View ===== -->
+              <div class="proto-view" id="view-static">
+                <div class="proto-view-header">
+                  <div class="proto-view-header-left">
+                    <div class="proto-view-icon" style="background:rgba(217,119,6,0.06);color:var(--amber);border-color:rgba(217,119,6,0.15);">STATIC</div>
+                    <div>
+                      <div class="proto-view-title">Static / Default Routes</div>
+                      <div class="proto-view-sub">3 manually configured routes</div>
+                    </div>
+                  </div>
+                  <span class="badge badge-amber">3 routes</span>
+                </div>
+
+                <div class="proto-section">
+                  <div class="proto-section-head">
+                    <span class="proto-section-title">Current Routes</span>
+                    <span class="proto-section-count">3 entries</span>
+                  </div>
+                  <div class="edit-banner" id="static-edit-banner" style="display: none;">
+                    <span>Editing route <strong id="static-edit-label"></strong></span>
+                    <button class="btn btn-ghost btn-sm" onclick="cancelEdit('static')" style="color: var(--muted);">Cancel</button>
+                  </div>
+                  <table class="edit-table">
+                    <thead><tr><th>Destination</th><th>Mask</th><th>Next Hop / Exit</th><th>Type</th><th style="text-align:right;">Actions</th></tr></thead>
+                    <tbody id="static-networks">
+                      <tr data-net-id="static-1">
+                        <td class="mono">0.0.0.0</td><td class="mono">0.0.0.0</td><td class="mono">192.168.1.1</td>
+                        <td><span class="badge badge-amber" style="font-size:10px;">Default</span></td>
+                        <td><div class="cell-actions">
+                          <button class="btn btn-ghost btn-sm" onclick="editNetwork('static','static-1','0.0.0.0','0.0.0.0','192.168.1.1')">Edit</button>
+                          <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="deleteNetwork('static','static-1','0.0.0.0')">Delete</button>
+                        </div></td>
+                      </tr>
+                      <tr data-net-id="static-2">
+                        <td class="mono">172.16.0.0</td><td class="mono">255.255.0.0</td><td class="mono">10.0.12.2</td>
+                        <td><span class="badge badge-blue" style="font-size:10px;">Static</span></td>
+                        <td><div class="cell-actions">
+                          <button class="btn btn-ghost btn-sm" onclick="editNetwork('static','static-2','172.16.0.0','255.255.0.0','10.0.12.2')">Edit</button>
+                          <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="deleteNetwork('static','static-2','172.16.0.0')">Delete</button>
+                        </div></td>
+                      </tr>
+                      <tr data-net-id="static-3">
+                        <td class="mono">10.10.0.0</td><td class="mono">255.255.255.0</td><td class="mono">Serial0/0/0</td>
+                        <td><span class="badge badge-blue" style="font-size:10px;">Static</span></td>
+                        <td><div class="cell-actions">
+                          <button class="btn btn-ghost btn-sm" onclick="editNetwork('static','static-3','10.10.0.0','255.255.255.0','Serial0/0/0')">Edit</button>
+                          <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="deleteNetwork('static','static-3','10.10.0.0')">Delete</button>
+                        </div></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div class="inline-form">
+                  <div class="inline-form-title" id="static-form-title">Add Route</div>
+                  <div class="inline-form-grid inline-form-grid-3">
+                    <div class="field"><label class="field-label">Destination</label><input type="text" class="input mono" id="static-dest" placeholder="192.168.10.0" /></div>
+                    <div class="field"><label class="field-label">Mask</label><input type="text" class="input mono" id="static-mask" placeholder="255.255.255.0" /></div>
+                    <div class="field"><label class="field-label">Next Hop / Exit</label><input type="text" class="input mono" id="static-nh" placeholder="10.0.12.2" /></div>
+                  </div>
+                  <div class="inline-form-footer" id="static-form-actions">
+                    <button class="btn btn-primary btn-sm" onclick="addOrUpdateNetwork('static')">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                      Add Route
+                    </button>
+                  </div>
+                </div>
+
+                <div style="display:flex; gap:8px; justify-content:flex-end; padding-top:4px; border-top: 1px solid var(--border);">
+                  <button class="btn btn-ghost btn-sm" onclick="openPreview('static-view')">View All</button>
+                  <button class="btn btn-primary btn-sm" onclick="openPreview('static-add')">Preview Changes</button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== SHOW TAB ===== -->
+        <div class="tab-content" id="tab-show">
+          <div style="margin-bottom: 20px;">
+            <h3 style="font-size: var(--fs-lg); font-weight: 600;">Show Commands</h3>
+            <p style="font-size: var(--fs-sm); color: var(--muted); margin-top: 4px;">Quick-access diagnostic commands grouped by domain</p>
+          </div>
+
+          <!-- Interfaces -->
+          <div style="margin-bottom: 20px;">
+            <h4 style="font-size: var(--fs-sm); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-bottom: 10px;">Interfaces</h4>
+            <div class="show-grid">
+              <button class="show-btn" onclick="runShow('show ip interface brief')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="6" y1="10" x2="6" y2="10.01"/><line x1="10" y1="10" x2="10" y2="10.01"/></svg>
+                show ip int brief
+              </button>
+              <button class="show-btn" onclick="runShow('show interfaces status')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/></svg>
+                show int status
+              </button>
+            </div>
+          </div>
+
+          <!-- Routing -->
+          <div style="margin-bottom: 20px;">
+            <h4 style="font-size: var(--fs-sm); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-bottom: 10px;">Routing</h4>
+            <div class="show-grid">
+              <button class="show-btn" onclick="runShow('show ip route')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                show ip route
+              </button>
+              <button class="show-btn" onclick="runShow('show ip ospf neighbor')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                show ospf neighbor
+              </button>
+              <button class="show-btn" onclick="runShow('show ip ospf database')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+                show ospf db
+              </button>
+              <button class="show-btn" onclick="runShow('show ip eigrp neighbors')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                show eigrp neighbors
+              </button>
+              <button class="show-btn" onclick="runShow('show ip eigrp topology')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                show eigrp topo
+              </button>
+              <button class="show-btn" onclick="runShow('show ip bgp summary')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+                show bgp summary
+              </button>
+              <button class="show-btn" onclick="runShow('show ip bgp')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                show ip bgp
+              </button>
+          </div>
+
+          <!-- System -->
+          <div style="margin-bottom: 20px;">
+            <h4 style="font-size: var(--fs-sm); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-bottom: 10px;">System</h4>
+            <div class="show-grid">
+              <button class="show-btn" onclick="runShow('show running-config')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                show run
+              </button>
+              <button class="show-btn" onclick="runShow('show version')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                show version
+              </button>
+              <button class="show-btn" onclick="runShow('show cdp neighbors')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                show cdp neighbors
+              </button>
+            </div>
+          </div>
+
+          <div id="show-result" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span class="badge badge-blue" id="show-cmd-label">show ip interface brief</span>
+                <span style="font-size: var(--fs-xs); color: var(--muted);">Updated just now</span>
+              </div>
+              <div style="display: flex; gap: 6px;">
+                <button class="btn btn-ghost btn-sm" onclick="copyShowResult()">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                  Copy
+                </button>
+                <button class="btn btn-ghost btn-sm" onclick="document.getElementById('show-result').style.display='none'">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  Clear
+                </button>
+              </div>
+            </div>
+            <div class="code-block" id="show-output" style="max-height: 400px; overflow-y: auto;"></div>
+          </div>
+        </div>
+
+        <!-- ===== CLI TAB ===== -->
+        <div class="tab-content" id="tab-cli">
+          <div style="margin-bottom: 16px;">
+            <h3 style="font-size: var(--fs-lg); font-weight: 600;">CLI Terminal</h3>
+            <p style="font-size: var(--fs-sm); color: var(--muted); margin-top: 4px;">Direct command-line access to the device</p>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 12px; padding: 10px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);">
+            <span class="badge badge-green"><span class="badge-dot"></span> Connected</span>
+            <span style="font-size: var(--fs-sm); color: var(--muted);">|</span>
+            <span style="font-size: var(--fs-sm); font-family: var(--font-mono); color: var(--fg);">192.168.1.11</span>
+            <span style="font-size: var(--fs-sm); color: var(--muted);">|</span>
+            <span style="font-size: var(--fs-sm); color: var(--muted);">Telnet</span>
+            <span style="font-size: var(--fs-sm); color: var(--muted);">|</span>
+            <span style="font-size: var(--fs-sm); color: var(--muted);">Uptime: 2h 34m</span>
+            <div style="margin-left: auto; display: flex; gap: 6px;">
+              <button class="btn btn-ghost btn-sm" onclick="copyTerminal()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                Copy
+              </button>
+              <button class="btn btn-ghost btn-sm" onclick="clearTerminal()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                Clear
+              </button>
+            </div>
+          </div>
+          <div class="terminal">
+            <div class="terminal-header">
+              <div class="terminal-dots"><span class="red"></span><span class="yellow"></span><span class="green"></span></div>
+              <span style="font-size: var(--fs-xs); color: var(--muted);">R1 — Telnet — 192.168.1.11</span>
+            </div>
+            <div class="terminal-body" id="terminal-body">
+              <div class="terminal-line"><span class="terminal-output">R1#show version</span></div>
+              <div class="terminal-line"><span class="terminal-output">Cisco IOS Software, C2900 Software (C2900NM-UNIVERSALK9-M), Version 15.1(4)M4</span></div>
+              <div class="terminal-line"><span class="terminal-output">Technical Support: http://www.cisco.com/techsupport</span></div>
+              <div class="terminal-line"><span class="terminal-output">Copyright (c) 1986-2013 by Cisco Systems, Inc.</span></div>
+              <div class="terminal-line"><span class="terminal-output">Compiled Thu 26-Jul-12 11:46 by prod_rel_team</span></div>
+              <div class="terminal-line"><span class="terminal-output">&nbsp;</span></div>
+              <div class="terminal-line"><span class="terminal-output">ROM: IOS ROM Emulation</span></div>
+              <div class="terminal-line"><span class="terminal-output">System image file is "flash0:c2900-universalk9-mz.SPA.151-4.M4.bin"</span></div>
+              <div class="terminal-line"><span class="terminal-output">&nbsp;</span></div>
+              <div class="terminal-line"><span class="terminal-output">R1 uptime is 2 hours, 34 minutes</span></div>
+              <div class="terminal-line"><span class="terminal-output">System returned to ROM by power-on</span></div>
+              <div class="terminal-line"><span class="terminal-output">&nbsp;</span></div>
+              <div class="terminal-line"><span class="terminal-prompt">R1#</span><span class="terminal-input"></span><span class="terminal-cursor"></span></div>
+            </div>
+          </div>
+          <div style="margin-top: 12px; display: flex; gap: 8px; align-items: center;">
+            <span style="font-family: var(--font-mono); font-size: var(--fs-sm); color: var(--green); white-space: nowrap;">R1#</span>
+            <input type="text" class="input" placeholder="Type a command... (Enter to send, ↑↓ for history)" id="cli-input" style="font-family: var(--font-mono); flex: 1;" onkeydown="handleCLIKey(event)" />
+            <button class="btn btn-primary" onclick="sendCLI()">Send</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== COMMAND PREVIEW DRAWER ===== -->
+  <div class="drawer-overlay" id="preview-overlay" onclick="closePreview()"></div>
+  <div class="drawer" id="preview-drawer">
+    <div class="drawer-header">
+      <h3>Command Preview</h3>
+      <button class="btn-icon" onclick="closePreview()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="drawer-body">
+      <p style="font-size: var(--fs-sm); color: var(--muted); margin-bottom: 16px;">Review the commands below before applying to the device.</p>
+      <div class="code-block" id="preview-commands" style="line-height: 1.8;"></div>
+      <div id="apply-result" style="display: none; margin-top: 20px;">
+        <h4 style="font-size: var(--fs-md); font-weight: 600; margin-bottom: 10px;">Apply Result</h4>
+        <div id="apply-result-content"></div>
+      </div>
+    </div>
+    <div class="drawer-footer">
+      <button class="btn btn-secondary" onclick="closePreview()">Cancel</button>
+      <button class="btn btn-secondary" onclick="copyCommands()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Copy All
+      </button>
+      <button class="btn btn-primary" id="apply-btn" onclick="applyCommands()">Apply</button>
+    </div>
+  </div>
+
+  <!-- ===== INTERFACE EDIT DIALOG ===== -->
+  <div class="dialog-overlay" id="intf-dialog">
+    <div class="dialog" style="width: 520px; max-width: 90vw; padding: 0;">
+      <div style="padding: 20px 24px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between;">
+        <div>
+          <h3 style="font-size: var(--fs-lg); font-weight: 600;">Edit Interface</h3>
+          <p style="font-size: var(--fs-sm); color: var(--muted); margin-top: 2px;">Configure IP addressing and administrative status</p>
+        </div>
+        <button class="btn-icon" onclick="closeInterfaceDialog()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div style="padding: 20px 24px;">
+        <div class="field">
+          <label class="field-label">Interface</label>
+          <select class="input" id="intf-select" onchange="prefillInterface()">
+            <option>GigabitEthernet0/0</option>
+            <option>GigabitEthernet0/1</option>
+            <option>Serial0/0/0</option>
+            <option>Loopback0</option>
+          </select>
+          <span class="field-hint">Loaded from the device using show ip interface brief; Refresh reloads this list.</span>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+          <div class="field">
+            <label class="field-label">IP Address</label>
+            <input type="text" class="input mono" placeholder="e.g. 192.168.1.11" id="intf-ip" />
+          </div>
+          <div class="field">
+            <label class="field-label">Subnet Mask</label>
+            <input type="text" class="input mono" placeholder="e.g. 255.255.255.0" id="intf-mask" />
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label">Description <span style="color: var(--muted); font-weight: 400;">(optional)</span></label>
+          <input type="text" class="input" placeholder="e.g. Link to R2" id="intf-desc" />
+        </div>
+        <div class="field" style="margin-bottom: 0;">
+          <label class="field-label">Administrative Status</label>
+          <div style="display: flex; gap: 10px; align-items: center; padding: 10px 12px; background: var(--gray-soft); border-radius: var(--radius); border: 1px solid var(--border);">
+            <div class="toggle on" id="intf-toggle" onclick="this.classList.toggle('on'); updateIntfLabel()"></div>
+            <div>
+              <span style="font-size: var(--fs-sm); font-weight: 500;" id="intf-status-label">no shutdown (up)</span>
+              <div style="font-size: var(--fs-xs); color: var(--muted);" id="intf-status-hint">Interface will be administratively enabled</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="padding: 16px 24px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end;">
+        <button class="btn btn-secondary" onclick="closeInterfaceDialog()">Cancel</button>
+        <button class="btn btn-primary" onclick="previewInterface()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          Preview Commands
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== LOOPBACK CREATE DIALOG ===== -->
+  <div class="dialog-overlay" id="loopback-dialog">
+    <div class="dialog" style="width: 520px; max-width: 90vw; padding: 0;">
+      <div style="padding: 20px 24px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between;">
+        <div>
+          <h3 style="font-size: var(--fs-lg); font-weight: 600;">Add Loopback</h3>
+          <p style="font-size: var(--fs-sm); color: var(--muted); margin-top: 2px;">Create a virtual routed interface; preview before apply</p>
+        </div>
+        <button class="btn-icon" onclick="closeLoopbackDialog()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
+      <div style="padding: 20px 24px;">
+        <div class="field"><label class="field-label">Loopback Number</label><input class="input mono" id="loopback-id" type="number" min="0" value="0" /></div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;"><div class="field"><label class="field-label">IP Address</label><input class="input mono" id="loopback-ip" placeholder="1.1.1.1" /></div><div class="field"><label class="field-label">Subnet Mask</label><input class="input mono" id="loopback-mask" value="255.255.255.255" /></div></div>
+        <div class="field"><label class="field-label">Description <span style="color: var(--muted); font-weight: 400;">(optional)</span></label><input class="input" id="loopback-desc" placeholder="Router ID" /></div>
+        <div class="field" style="margin-bottom: 0;"><label class="field-label">Administrative Status</label><div style="display: flex; gap: 10px; align-items: center; padding: 10px 12px; background: var(--gray-soft); border-radius: var(--radius); border: 1px solid var(--border);"><div class="toggle on" id="loopback-toggle" onclick="this.classList.toggle('on')"></div><span style="font-size: var(--fs-sm); font-weight: 500;">no shutdown (administratively up)</span></div></div>
+      </div>
+      <div style="padding: 16px 24px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end;"><button class="btn btn-secondary" onclick="closeLoopbackDialog()">Cancel</button><button class="btn btn-primary" onclick="previewLoopback()">Preview Commands</button></div>
+    </div>
+  </div>
+
+  <!-- ===== SAVE CONFIG DIALOG ===== -->
+  <div class="dialog-overlay" id="save-dialog">
+    <div class="dialog">
+      <h3>Save Configuration?</h3>
+      <p>This will run <code style="font-family: var(--font-mono); background: var(--gray-soft); padding: 2px 6px; border-radius: 4px;">write memory</code> on R1, saving the running configuration to startup configuration. This is a non-destructive operation.</p>
+      <div class="dialog-actions">
+        <button class="btn btn-secondary" onclick="hideDialog('save-dialog')">Cancel</button>
+        <button class="btn btn-primary" onclick="hideDialog('save-dialog'); showToast('Configuration saved to NVRAM', 'success')">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== RIP DELETE DIALOG ===== -->
+  <div class="dialog-overlay" id="rip-delete-dialog">
+    <div class="dialog">
+      <h3>Remove RIP Configuration?</h3>
+      <p>This will remove all RIP settings from R1. The following commands will be generated:</p>
+      <div class="code-block" style="margin-bottom: 16px; font-size: 13px;">
+        <div style="color: var(--red);">no router rip</div>
+      </div>
+      <p style="font-size: var(--fs-sm); color: var(--amber); margin-bottom: 0;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: -2px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        RIP routes will be removed from the routing table.
+      </p>
+      <div class="dialog-actions">
+        <button class="btn btn-secondary" onclick="hideDialog('rip-delete-dialog')">Cancel</button>
+        <button class="btn btn-danger" onclick="hideDialog('rip-delete-dialog'); openPreview('rip-delete')">Remove RIP</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== OSPF DELETE DIALOG ===== -->
+  <div class="dialog-overlay" id="ospf-delete-dialog">
+    <div class="dialog">
+      <h3>Remove OSPF Configuration?</h3>
+      <p>This will remove all OSPF settings from R1. The following commands will be generated:</p>
+      <div class="code-block" style="margin-bottom: 16px; font-size: 13px;">
+        <div style="color: var(--red);">no router ospf 1</div>
+      </div>
+      <p style="font-size: var(--fs-sm); color: var(--amber); margin-bottom: 0;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: -2px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        OSPF neighbor adjacencies will be torn down. Routes will be removed.
+      </p>
+      <div class="dialog-actions">
+        <button class="btn btn-secondary" onclick="hideDialog('ospf-delete-dialog')">Cancel</button>
+        <button class="btn btn-danger" onclick="hideDialog('ospf-delete-dialog'); openPreview('ospf-delete')">Remove OSPF</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="dialog-overlay" id="eigrp-delete-dialog">
+    <div class="dialog">
+      <div class="dialog-header">
+        <div class="dialog-icon" style="background: var(--red-soft); color: var(--red);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </div>
+        <h3 class="dialog-title">Remove EIGRP?</h3>
+        <p class="dialog-desc">This will disable EIGRP process AS 100 on this device. All EIGRP routes will be removed from the routing table.</p>
+      </div>
+      <div class="dialog-actions">
+        <button class="btn btn-secondary" onclick="hideDialog('eigrp-delete-dialog')">Cancel</button>
+        <button class="btn btn-danger" onclick="hideDialog('eigrp-delete-dialog'); openPreview('eigrp-delete')">Remove EIGRP</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="dialog-overlay" id="bgp-delete-dialog">
+    <div class="dialog">
+      <div class="dialog-header">
+        <div class="dialog-icon" style="background: var(--red-soft); color: var(--red);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </div>
+        <h3 class="dialog-title">Remove BGP?</h3>
+        <p class="dialog-desc">This will disable BGP process AS 65001 on this device. All BGP peer sessions and routes will be terminated.</p>
+      </div>
+      <div class="dialog-actions">
+        <button class="btn btn-secondary" onclick="hideDialog('bgp-delete-dialog')">Cancel</button>
+        <button class="btn btn-danger" onclick="hideDialog('bgp-delete-dialog'); openPreview('bgp-delete')">Remove BGP</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <script>
+    // Sidebar collapse state
+    (function() {
+      const sidebar = document.getElementById('sidebar');
+      const isTablet = window.matchMedia('(max-width: 1024px)').matches;
+      if (!isTablet) {
+        const saved = localStorage.getItem('netconfig-sidebar-collapsed');
+        if (saved === 'true') sidebar.classList.add('collapsed');
+      }
+    })();
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const isTablet = window.matchMedia('(max-width: 1024px)').matches;
+      if (isTablet) {
+        sidebar.classList.toggle('open');
+      } else {
+        sidebar.classList.toggle('collapsed');
+        localStorage.setItem('netconfig-sidebar-collapsed', sidebar.classList.contains('collapsed'));
+      }
+    }
+
+    // Tab switching
+    function switchTab(tab) {
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.getElementById('tab-' + tab).classList.add('active');
+      event.target.classList.add('active');
+    }
+
+    // Protocol selector — tab-based
+    function selectProto(name, el) {
+      document.querySelectorAll('.proto-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.proto-view').forEach(v => v.classList.remove('active'));
+      if (el) el.classList.add('active');
+      const view = document.getElementById('view-' + name);
+      if (view) view.classList.add('active');
+    }
+
+    // Routing network edit state
+    let routingEditState = { proto: null, netId: null };
+
+    function editNetwork(proto, netId, net, wc, area) {
+      cancelEdit(routingEditState.proto);
+      routingEditState = { proto, netId };
+      const row = document.querySelector(`tr[data-net-id="${netId}"]`);
+      if (row) row.classList.add('editing');
+
+      const banner = document.getElementById(proto + '-edit-banner');
+      const label = document.getElementById(proto + '-edit-label');
+      const title = document.getElementById(proto + '-form-title');
+      if (banner) banner.style.display = '';
+      if (label) label.textContent = net;
+      if (title) title.textContent = 'Edit Network';
+
+      if (proto === 'ospf') {
+        document.getElementById('ospf-net').value = net || '';
+        document.getElementById('ospf-wc').value = wc || '';
+        document.getElementById('ospf-area').value = area || '0';
+      } else if (proto === 'rip') {
+        document.getElementById('rip-net').value = net || '';
+      } else if (proto === 'eigrp') {
+        document.getElementById('eigrp-net').value = net || '';
+        document.getElementById('eigrp-wc').value = wc || '';
+      } else if (proto === 'bgp') {
+        document.getElementById('bgp-nbr-ip').value = net || '';
+        document.getElementById('bgp-nbr-as').value = wc || '';
+        document.getElementById('bgp-nbr-desc').value = area || '';
+      } else if (proto === 'static') {
+        document.getElementById('static-dest').value = net || '';
+        document.getElementById('static-mask').value = wc || '';
+        document.getElementById('static-nh').value = area || '';
+      }
+    }
+
+    function cancelEdit(proto) {
+      if (!proto) return;
+      routingEditState = { proto: null, netId: null };
+      document.querySelectorAll('.edit-table tbody tr.editing').forEach(r => r.classList.remove('editing'));
+      const banner = document.getElementById(proto + '-edit-banner');
+      const title = document.getElementById(proto + '-form-title');
+      if (banner) banner.style.display = 'none';
+      if (title) {
+        title.textContent = proto === 'static' ? 'Add Route' : 'Add Network';
+      }
+      if (proto === 'ospf') {
+        document.getElementById('ospf-net').value = '';
+        document.getElementById('ospf-wc').value = '';
+        document.getElementById('ospf-area').value = '0';
+      } else if (proto === 'rip') {
+        document.getElementById('rip-net').value = '';
+      } else if (proto === 'eigrp') {
+        document.getElementById('eigrp-net').value = '';
+        document.getElementById('eigrp-wc').value = '';
+      } else if (proto === 'bgp') {
+        document.getElementById('bgp-nbr-ip').value = '';
+        document.getElementById('bgp-nbr-as').value = '';
+        document.getElementById('bgp-nbr-desc').value = '';
+      } else if (proto === 'static') {
+        document.getElementById('static-dest').value = '';
+        document.getElementById('static-mask').value = '';
+        document.getElementById('static-nh').value = '';
+      }
+    }
+
+    function deleteNetwork(proto, netId, netName) {
+      if (!confirm(`Delete ${netName} from ${proto.toUpperCase()}?`)) return;
+      const row = document.querySelector(`tr[data-net-id="${netId}"]`);
+      if (row) row.remove();
+      if (routingEditState.netId === netId) cancelEdit(proto);
+      showToast(`${netName} removed from ${proto.toUpperCase()} config`, 'success');
+    }
+
+    function addOrUpdateNetwork(proto) {
+      if (routingEditState.proto === proto && routingEditState.netId) {
+        const row = document.querySelector(`tr[data-net-id="${routingEditState.netId}"]`);
+        if (row) row.classList.remove('editing');
+        showToast('Network entry updated', 'success');
+        cancelEdit(proto);
+      } else {
+        showToast('Network added to config', 'success');
+      }
+    }
+
+    // Preview commands
+    const commands = {
+      static: `ip route 172.16.0.0 255.255.0.0 10.0.12.2`,
+      'static-view': `! Current static routes\nip route 0.0.0.0 0.0.0.0 192.168.1.1\nip route 172.16.0.0 255.255.0.0 10.0.12.2\nip route 10.10.0.0 255.255.255.0 Serial0/0/0`,
+      'static-add': `ip route 192.168.10.0 255.255.255.0 10.0.12.2`,
+      rip: `router rip\n version 2\n network 10.0.0.0\n no auto-summary`,
+      'rip-view': `! Current RIP config\nrouter rip\n version 2\n network 10.0.0.0\n no auto-summary`,
+      'rip-add': `router rip\n network 172.16.0.0`,
+      ospf: `router ospf 1\n router-id 1.1.1.1\n network 10.0.12.0 0.0.0.255 area 0\n network 1.1.1.1 0.0.0.0 area 0`,
+      'ospf-view': `! Current OSPF config\nrouter ospf 1\n router-id 1.1.1.1\n network 10.0.12.0 0.0.0.255 area 0\n network 1.1.1.1 0.0.0.0 area 0`,
+      'ospf-add': `router ospf 1\n network 10.0.23.0 0.0.0.255 area 0`,
+
+      'rip-delete': `no router rip`,
+      'ospf-delete': `no router ospf 1`,
+      'eigrp-view': `! Current EIGRP config\n(no EIGRP configured)`,
+      'eigrp-add': `router eigrp 100\n network 10.0.0.0 0.0.255.255\n network 172.16.0.0 0.0.255.255`,
+      'eigrp-delete': `no router eigrp 100`,
+      'bgp-view': `! Current BGP config\n(no BGP configured)`,
+      'bgp-add': `router bgp 65001\n bgp router-id 3.3.3.3\n neighbor 10.0.23.2 remote-as 65002\n network 192.168.1.0 mask 255.255.255.0`,
+      'bgp-delete': `no router bgp 65001`
+    };
+
+    function openPreview(type) {
+      const lines = commands[type].split('\n');
+      const html = lines.map((l, i) => `<div style="display:flex;"><span style="color:#475569;width:32px;text-align:right;padding-right:12px;user-select:none;flex-shrink:0;">${i + 1}</span><span style="color:#E2E8F0;">${l}</span></div>`).join('');
+      document.getElementById('preview-commands').innerHTML = html;
+      document.getElementById('apply-result').style.display = 'none';
+      document.getElementById('apply-btn').disabled = false;
+      document.getElementById('apply-btn').textContent = 'Apply';
+      document.getElementById('preview-overlay').classList.add('open');
+      document.getElementById('preview-drawer').classList.add('open');
+    }
+
+    function closePreview() {
+      document.getElementById('preview-overlay').classList.remove('open');
+      document.getElementById('preview-drawer').classList.remove('open');
+    }
+
+    function copyCommands() {
+      const text = document.getElementById('preview-commands').textContent;
+      navigator.clipboard.writeText(text);
+      showToast('Commands copied to clipboard', 'success');
+    }
+
+    function applyCommands() {
+      const btn = document.getElementById('apply-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner" style="border-top-color:#fff;border-color:rgba(255,255,255,0.3);width:14px;height:14px;"></span> Applying...';
+
+      setTimeout(() => {
+        btn.textContent = 'Apply';
+        btn.disabled = false;
+
+        const resultDiv = document.getElementById('apply-result');
+        const content = document.getElementById('apply-result-content');
+        resultDiv.style.display = '';
+
+        const successes = [
+          { line: 'router ospf 1', status: 'ok', msg: '' },
+          { line: 'router-id 1.1.1.1', status: 'ok', msg: '' },
+          { line: 'network 10.0.12.0 0.0.0.255 area 0', status: 'ok', msg: '' },
+          { line: 'network 1.1.1.1 0.0.0.0 area 0', status: 'ok', msg: '' },
+        ];
+        content.innerHTML = successes.map(s => `
+          <div class="apply-line" style="align-items: flex-start; padding: 8px 0; border-bottom: 1px solid var(--border);">
+            <svg class="status-icon" viewBox="0 0 24 24" fill="none" stroke="${s.status === 'ok' ? 'var(--green)' : 'var(--red)'}" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            <div>
+              <div style="font-family:var(--font-mono);font-size:13px;color:#E2E8F0;">${s.line}</div>
+              ${s.msg ? `<div style="font-size:12px;color:${s.status === 'ok' ? 'var(--green)' : 'var(--red)'};margin-top:2px;">${s.msg}</div>` : ''}
+            </div>
+          </div>
+        `).join('');
+
+        showToast('Commands applied successfully', 'success');
+      }, 1500);
+    }
+
+    // Interface dialog
+    function openInterfaceDialog() {
+      document.getElementById('intf-dialog').classList.add('open');
+      prefillInterface();
+    }
+    function closeInterfaceDialog() {
+      document.getElementById('intf-dialog').classList.remove('open');
+    }
+    function updateIntfLabel() {
+      const isUp = document.getElementById('intf-toggle').classList.contains('on');
+      document.getElementById('intf-status-label').textContent = isUp ? 'no shutdown (up)' : 'shutdown (down)';
+      document.getElementById('intf-status-hint').textContent = isUp ? 'Interface will be administratively enabled' : 'Interface will be administratively disabled';
+    }
+    function prefillInterface() {
+      const current = {
+        'GigabitEthernet0/0': { ip: '192.168.1.11', mask: '255.255.255.0', description: '', up: true },
+        'GigabitEthernet0/1': { ip: '10.0.12.1', mask: '255.255.255.0', description: 'Uplink to R2', up: true },
+        'Serial0/0/0': { ip: '10.0.23.1', mask: '255.255.255.252', description: '', up: false },
+        'Loopback0': { ip: '1.1.1.1', mask: '255.255.255.255', description: '', up: true },
+      }[document.getElementById('intf-select').value];
+      if (!current) return;
+      document.getElementById('intf-ip').value = current.ip;
+      document.getElementById('intf-mask').value = current.mask;
+      document.getElementById('intf-desc').value = current.description;
+      document.getElementById('intf-toggle').classList.toggle('on', current.up);
+      updateIntfLabel();
+    }
+    function previewInterface() {
+      closeInterfaceDialog();
+      const ip = document.getElementById('intf-ip').value || '192.168.1.11';
+      const mask = document.getElementById('intf-mask').value || '255.255.255.0';
+      const desc = document.getElementById('intf-desc').value;
+      const isUp = document.getElementById('intf-toggle').classList.contains('on');
+      const selectedInterface = document.getElementById('intf-select').value;
+      let cmds = `interface ${selectedInterface}\n ip address ${ip} ${mask}`;
+      if (desc) cmds += `\n description ${desc}`;
+      cmds += `\n ${isUp ? 'no shutdown' : 'shutdown'}`;
+      openPreview('intf');
+      document.getElementById('preview-commands').innerHTML = cmds.split('\n').map((l, i) => `<div style="display:flex;"><span style="color:#475569;width:32px;text-align:right;padding-right:12px;user-select:none;flex-shrink:0;">${i + 1}</span><span style="color:#E2E8F0;">${l}</span></div>`).join('');
+    }
+    function openLoopbackDialog() { document.getElementById('loopback-dialog').classList.add('open'); }
+    function closeLoopbackDialog() { document.getElementById('loopback-dialog').classList.remove('open'); }
+    function previewLoopback() {
+      const id = document.getElementById('loopback-id').value || '0';
+      const ip = document.getElementById('loopback-ip').value || '1.1.1.1';
+      const mask = document.getElementById('loopback-mask').value || '255.255.255.255';
+      const desc = document.getElementById('loopback-desc').value;
+      const up = document.getElementById('loopback-toggle').classList.contains('on');
+      let cmds = `interface Loopback${id}\n ip address ${ip} ${mask}`;
+      if (desc) cmds += `\n description ${desc}`;
+      cmds += `\n ${up ? 'no shutdown' : 'shutdown'}`;
+      closeLoopbackDialog();
+      openPreview('loopback');
+      document.getElementById('preview-commands').innerHTML = cmds.split('\n').map((l, i) => `<div style="display:flex;"><span style="color:#475569;width:32px;text-align:right;padding-right:12px;user-select:none;flex-shrink:0;">${i + 1}</span><span style="color:#E2E8F0;">${l}</span></div>`).join('');
+    }
+
+    // Show commands
+    const showOutputs = {
+      'show ip interface brief': `Interface                  IP-Address      OK? Method Status                Protocol\nGigabitEthernet0/0         192.168.1.11    YES manual up                    up\nGigabitEthernet0/1         10.0.12.1       YES manual up                    up\nSerial0/0/0                10.0.23.1       YES manual down                  down\nLoopback0                  1.1.1.1         YES manual up                    up`,
+      'show running-config': `Building configuration...\n\nCurrent configuration : 1087 bytes\n!\nversion 15.1\nservice timestamps debug datetime msec\nservice timestamps log datetime msec\nno service password-encryption\n!\nhostname R1\n!\ninterface Loopback0\n ip address 1.1.1.1 255.255.255.255\n!\ninterface GigabitEthernet0/0\n ip address 192.168.1.11 255.255.255.0\n no shutdown\n!\ninterface GigabitEthernet0/1\n ip address 10.0.12.1 255.255.255.0\n no shutdown\n!\nrouter ospf 1\n router-id 1.1.1.1\n network 10.0.12.0 0.0.0.255 area 0\n network 1.1.1.1 0.0.0.0 area 0\n!\nend`,
+      'show ip route': `Codes: L - local, C - connected, S - static, R - RIP, M - mobile, B - BGP\n       D - EIGRP, EX - EIGRP external, O - OSPF, IA - OSPF inter area\n       N1 - OSPF NSSA external type 1, N2 - OSPF NSSA external type 2\n       E1 - OSPF external type 1, E2 - OSPF external type 2\n\nGateway of last resort is 192.168.1.1 to network 0.0.0.0\n\nS*   0.0.0.0/0 [1/0] via 192.168.1.1\n     1.0.0.0/32 is subnetted, 1 subnets\nC        1.1.1.1/32 is directly connected, Loopback0\n     10.0.0.0/8 is variably subnetted, 3 subnets, 2 masks\nC        10.0.12.0/24 is directly connected, GigabitEthernet0/1\nL        10.0.12.1/32 is directly connected, GigabitEthernet0/1\nC        10.0.23.0/30 is directly connected, Serial0/0/0\n     192.168.1.0/24 is variably subnetted, 2 subnets, 2 masks\nC        192.168.1.0/24 is directly connected, GigabitEthernet0/0\nL        192.168.1.11/32 is directly connected, GigabitEthernet0/0`,
+      'show ip ospf neighbor': `Neighbor ID     Pri   State           Dead Time   Address         Interface\n2.2.2.2           1   FULL/DR         00:00:37    10.0.12.2       GigabitEthernet0/1`,
+      'show ip ospf database': `            OSPF Router with ID (1.1.1.1) (Process ID 1)\n\n                Router Link States (Area 0)\nLink ID         ADV Router      Age         Seq#       Checksum Link count\n1.1.1.1         1.1.1.1         234         0x80000003 0x00d3f0 3\n2.2.2.2         2.2.2.2         234         0x80000002 0x00a374 2\n\n                Net Link States (Area 0)\nLink ID         ADV Router      Age         Seq#       Checksum\n10.0.12.2       2.2.2.2         234         0x80000001 0x00c992`,
+
+      'show version': `Cisco IOS Software, C2900 Software (C2900NM-UNIVERSALK9-M), Version 15.1(4)M4\nTechnical Support: http://www.cisco.com/techsupport\nCopyright (c) 1986-2013 by Cisco Systems, Inc.\n\nROM: IOS ROM Emulation\nSystem image file is "flash0:c2900-universalk9-mz.SPA.151-4.M4.bin"\n\nR1 uptime is 2 hours, 34 minutes\nSystem returned to ROM by power-on\nSystem image file is "flash0:c2900-universalk9-mz.SPA.151-4.M4.bin"\n\ncisco C2900 (revision 1.0) with 96256K/8192K bytes of memory.\nProcessor board ID FTX15240064\n2 GigabitEthernet interfaces\n1 Serial interface\n1 Virtual Private Network (VPN) Module\nDRAM configuration is 64 bits wide with parity disabled.\n191K bytes of non-volatile configuration memory.\n63488K bytes of ATA CompactFlash (Read/Write)`,
+      'show interfaces status': `Port         Name               Status       Vlan       Duplex  Speed Type\nGi0/0                           connected    1          a-full  a-1000 10/100/1000BaseTX\nGi0/1                           connected    1          a-full  a-1000 10/100/1000BaseTX\nSe0/0/0                         disabled     1          half    128000 SHDSL`,
+      'show cdp neighbors': `Capability Codes: R - Router, T - Trans Bridge, B - Source Route Bridge\n                  S - Switch, H - Host, I - IGMP, r - Repeater\n\nDevice ID        Local Intrce     Holdtme    Capability  Platform  Port ID\nR2               Gi0/1            155        R           2900      Gi0/1`,
+      'show ip eigrp neighbors': `EIGRP-IPv4 Neighbors for AS(100)\nH   Address                 Interface       Hold Uptime   SRTT   RTO  Q  Seq\n0   10.0.12.2               Gi0/1            14  02:34:12  12    200  0  5`,
+      'show ip eigrp topology': `EIGRP-IPv4 Topology Table for AS(100)/ID(1.1.1.1)\nP 10.0.0.0/8, 1 successors, FD is 409600\n        via 10.0.12.2 (409600/128256), GigabitEthernet0/1\nP 172.16.0.0/16, 1 successors, FD is 409600\n        via 10.0.12.2 (409600/128256), GigabitEthernet0/1`,
+      'show ip bgp summary': `BGP router identifier 3.3.3.3, local AS number 65001\nBGP table version is 1, main routing table version 1\n\nNeighbor        V           AS MsgRcvd MsgSent   TblVer  InQ OutQ Up/Down  State/PfxRcd\n10.0.23.2       4        65002     0       0        0    0    0 never    Idle`,
+      'show ip bgp': `BGP table version is 1, main routing table version 1\n\n     Network          Next Hop            Metric LocPrf Weight Path\n*>  192.168.1.0/24   0.0.0.0                  0         32768 i`,
+    };
+
+    function runShow(cmd) {
+      document.getElementById('show-cmd-label').textContent = cmd;
+      document.getElementById('show-output').textContent = showOutputs[cmd] || 'Command not available.';
+      document.getElementById('show-result').style.display = '';
+    }
+
+    function copyShowResult() {
+      navigator.clipboard.writeText(document.getElementById('show-output').textContent);
+      showToast('Output copied to clipboard', 'success');
+    }
+
+    // CLI
+    let cliHistory = [];
+    let cliHistoryIdx = -1;
+
+    function handleCLIKey(e) {
+      if (e.key === 'Enter') { sendCLI(); return; }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (cliHistoryIdx < cliHistory.length - 1) {
+          cliHistoryIdx++;
+          document.getElementById('cli-input').value = cliHistory[cliHistory.length - 1 - cliHistoryIdx];
+        }
+      }
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (cliHistoryIdx > 0) {
+          cliHistoryIdx--;
+          document.getElementById('cli-input').value = cliHistory[cliHistory.length - 1 - cliHistoryIdx];
+        } else {
+          cliHistoryIdx = -1;
+          document.getElementById('cli-input').value = '';
+        }
+      }
+    }
+
+    function sendCLI() {
+      const input = document.getElementById('cli-input');
+      const cmd = input.value.trim();
+      if (!cmd) return;
+      cliHistory.push(cmd);
+      cliHistoryIdx = -1;
+      const body = document.getElementById('terminal-body');
+      const cursorLine = body.querySelector('.terminal-cursor').parentElement;
+      cursorLine.innerHTML = `<span class="terminal-prompt">R1#</span><span class="terminal-output">${cmd}</span>`;
+      const newLine = document.createElement('div');
+      newLine.className = 'terminal-line';
+      newLine.innerHTML = `<span class="terminal-prompt">R1#</span><span class="terminal-input"></span><span class="terminal-cursor"></span>`;
+      body.appendChild(newLine);
+      body.scrollTop = body.scrollHeight;
+      input.value = '';
+    }
+
+    function clearTerminal() {
+      const body = document.getElementById('terminal-body');
+      body.innerHTML = `<div class="terminal-line"><span class="terminal-prompt">R1#</span><span class="terminal-input"></span><span class="terminal-cursor"></span></div>`;
+    }
+
+    function copyTerminal() {
+      const text = document.getElementById('terminal-body').textContent;
+      navigator.clipboard.writeText(text);
+      showToast('Terminal output copied', 'success');
+    }
+
+    // Dialog
+    function showDialog(id) { document.getElementById(id).classList.add('open'); }
+    function hideDialog(id) { document.getElementById(id).classList.remove('open'); }
+
+    // Toast
+    function showToast(msg, type) {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `toast toast-${type}`;
+      const icon = type === 'success'
+        ? '<svg viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>'
+        : '<svg viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
+      toast.innerHTML = `${icon}<span>${msg}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    // Keyboard: Escape to close drawers/dialogs + cancel routing edit
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        if (routingEditState.proto) { cancelEdit(routingEditState.proto); return; }
+        closePreview();
+        closeInterfaceDialog();
+        closeLoopbackDialog();
+        document.querySelectorAll('.dialog-overlay.open').forEach(d => d.classList.remove('open'));
+      }
+    });
+  </script>
+</body>
+</html>

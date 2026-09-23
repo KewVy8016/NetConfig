@@ -1,0 +1,2 @@
+{# Template เพิ่ม Static/Default route; รับ destination, subnet_mask, next_hop, exit_interface #}
+ip route {{ destination }} {{ subnet_mask }} {{ next_hop if next_hop else exit_interface }}

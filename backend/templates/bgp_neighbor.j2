@@ -1,0 +1,5 @@
+router bgp {{ local_as }}
+ bgp router-id {{ router_id }}
+ neighbor {{ neighbor_ip }} remote-as {{ remote_as }}
+{% if description %} neighbor {{ neighbor_ip }} description {{ description }}
+{% endif %}

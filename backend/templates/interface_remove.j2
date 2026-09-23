@@ -1,0 +1,6 @@
+{# interface_remove.j2
+   ตัวแปร: interface_name, ip_address, subnet_mask
+   ใช้ลบค่าเดิมก่อนตั้งค่าใหม่ใน workflow ที่ระบุเท่านั้น
+#}
+interface {{ interface_name }}
+ no ip address {{ ip_address }} {{ subnet_mask }}

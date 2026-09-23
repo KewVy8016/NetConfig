@@ -1,0 +1,268 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@import "tailwindcss";
+@config "../tailwind.config.js";
+
+/* =========================================================
+   Design System CSS Variables — ตาม Design/DESIGN.md
+   ========================================================= */
+:root {
+  --sidebar-bg: #0F172A;
+  --sidebar-text: #94A3B8;
+  --sidebar-active: #1E293B;
+  --sidebar-hover: #1E293B;
+
+  --bg: #F8FAFC;
+  --surface: #FFFFFF;
+  --fg: #0F172A;
+  --muted: #64748B;
+  --border: #E2E8F0;
+
+  --accent: #2563EB;
+  --accent-soft: #DBEAFE;
+  --cyan: #0891B2;
+  --cyan-soft: #CFFAFE;
+
+  --green: #16A34A;
+  --red: #DC2626;
+  --amber: #D97706;
+  --gray: #64748B;
+
+  --terminal-bg: #0B1120;
+  --terminal-text: #E2E8F0;
+  --terminal-border: #1E293B;
+
+  --fs-xs: 12px;
+  --fs-sm: 13px;
+  --fs-base: 14px;
+  --fs-md: 15px;
+  --fs-lg: 16px;
+  --fs-xl: 18px;
+  --fs-2xl: 22px;
+}
+
+/* =========================================================
+   Base
+   ========================================================= */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--fg);
+  font-family: 'Noto Sans Thai', 'IBM Plex Sans Thai', system-ui, sans-serif;
+  font-size: var(--fs-base);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* =========================================================
+   Component classes ตาม DESIGN.md
+   ========================================================= */
+
+/* Buttons */
+.btn-primary {
+  @apply bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium
+         hover:bg-blue-700 transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+.btn-secondary {
+  @apply bg-white text-gray-700 border border-gray-200 px-4 py-2 rounded-lg text-sm font-medium
+         hover:bg-gray-50 transition-colors duration-150 disabled:opacity-50;
+}
+
+.btn-danger {
+  @apply bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium
+         hover:bg-red-700 transition-colors duration-150 disabled:opacity-50;
+}
+
+.btn-ghost {
+  @apply bg-transparent text-slate-500 px-4 py-2 rounded-lg text-sm font-medium
+         hover:bg-gray-100 transition-colors duration-150;
+}
+
+.btn-sm {
+  @apply px-3 py-1.5 text-xs;
+}
+
+.btn-icon {
+  @apply p-2 rounded-lg;
+}
+
+/* Badges — ตาม DESIGN.md: dot + text always */
+.badge {
+  @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium;
+}
+
+.badge-dot {
+  @apply w-1.5 h-1.5 rounded-full flex-shrink-0;
+}
+
+.badge-green {
+  @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700;
+}
+.badge-green .badge-dot { @apply bg-green-600; }
+
+.badge-red {
+  @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-50 text-red-700;
+}
+.badge-red .badge-dot { @apply bg-red-600; }
+
+.badge-amber {
+  @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700;
+}
+.badge-amber .badge-dot { @apply bg-amber-600; }
+
+.badge-gray {
+  @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600;
+}
+.badge-gray .badge-dot { @apply bg-slate-500; }
+
+.badge-blue {
+  @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700;
+}
+.badge-blue .badge-dot { @apply bg-blue-600; }
+
+/* Card */
+.card {
+  @apply bg-white border border-gray-200 rounded-xl shadow-sm p-5;
+}
+
+/* Input */
+.input-field {
+  @apply w-full px-3 py-2 border border-gray-200 rounded-lg text-sm
+         focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100
+         transition-colors duration-150;
+}
+
+.select-field {
+  @apply w-full px-3 py-2 border border-gray-200 rounded-lg text-sm appearance-none cursor-pointer
+         focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100
+         transition-colors duration-150;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6,9 12,15 18,9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 36px;
+}
+
+.input-error {
+  @apply border-red-600 focus:border-red-600 focus:ring-red-100;
+}
+
+.error-msg {
+  @apply text-red-600 text-xs mt-1;
+}
+
+/* Table */
+.table-wrap {
+  @apply bg-white border border-gray-200 rounded-xl overflow-hidden;
+}
+
+.ds-table {
+  @apply w-full border-collapse;
+}
+
+.ds-table thead th {
+  @apply text-xs uppercase text-slate-500 font-semibold px-4 py-3 text-left bg-gray-50 border-b border-gray-200;
+}
+
+.ds-table tbody td {
+  @apply px-4 py-3 text-sm border-b border-gray-100 last:border-b-0;
+}
+
+.ds-table tbody tr:hover {
+  @apply bg-gray-50;
+}
+
+/* Toggle Switch — 40x22px ตาม DESIGN.md */
+.toggle-switch {
+  @apply relative inline-block w-10 h-[22px] flex-shrink-0;
+}
+
+.toggle-switch input {
+  @apply sr-only;
+}
+
+.toggle-thumb {
+  @apply absolute inset-0 rounded-full cursor-pointer transition-colors duration-200;
+  background-color: #CBD5E1;
+}
+
+.toggle-thumb::before {
+  @apply absolute content-[''] w-[18px] h-[18px] bg-white rounded-full shadow-sm
+         transition-transform duration-200;
+  top: 2px;
+  left: 2px;
+}
+
+input:checked + .toggle-thumb {
+  background-color: var(--green);
+}
+
+input:checked + .toggle-thumb::before {
+  transform: translateX(18px);
+}
+
+/* Dialog overlay */
+.dialog-overlay {
+  @apply fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4;
+}
+
+.dialog-panel {
+  @apply bg-white rounded-xl shadow-xl w-full max-w-md;
+}
+
+/* Drawer */
+.drawer-overlay {
+  @apply fixed inset-0 bg-black/40 z-40;
+}
+
+.drawer-panel {
+  @apply fixed right-0 top-0 h-full w-[520px] bg-white shadow-xl z-50 flex flex-col;
+}
+
+/* Toast */
+.toast-container {
+  @apply fixed bottom-4 right-4 z-[60] flex flex-col gap-2;
+}
+
+.toast {
+  @apply bg-gray-900 text-white px-4 py-3 rounded-lg shadow-lg text-sm
+         border-l-4 min-w-72 max-w-sm;
+  animation: slideInToast 0.2s ease-out;
+}
+
+.toast-success { @apply border-l-green-600; }
+.toast-error   { @apply border-l-red-600; }
+.toast-info    { @apply border-l-blue-600; }
+
+@keyframes slideInToast {
+  from { transform: translateX(120%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+/* Topbar blur */
+.topbar-blur {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Spinner */
+.spinner {
+  @apply w-4 h-4 border-2 border-current border-t-transparent rounded-full;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Terminal area */
+.terminal-area {
+  background-color: var(--terminal-bg);
+  color: var(--terminal-text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: var(--fs-sm);
+  border: 1px solid var(--terminal-border);
+}

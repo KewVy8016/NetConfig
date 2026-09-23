@@ -1,0 +1,11 @@
+interface {{ interface_name }}
+ no switchport
+ ip address {{ ip_address }} {{ subnet_mask }}
+{% if description %}
+ description {{ description }}
+{% endif %}
+{% if admin_up %}
+ no shutdown
+{% else %}
+ shutdown
+{% endif %}

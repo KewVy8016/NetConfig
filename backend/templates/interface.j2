@@ -1,0 +1,10 @@
+{# interface.j2
+   ตัวแปร: interface_name, ip_address, subnet_mask, description, admin_up
+   สร้างคำสั่งใน interface context เท่านั้น; input ถูก validate ก่อน render
+#}
+interface {{ interface_name }}
+ ip address {{ ip_address }} {{ subnet_mask }}
+{% if description %} description {{ description }}
+{% endif %}{% if admin_up %} no shutdown
+{% else %} shutdown
+{% endif %}

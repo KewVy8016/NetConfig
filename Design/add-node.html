@@ -1,0 +1,760 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Add Node — NetConfig</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --sidebar-bg: #0F172A;
+      --sidebar-text: #94A3B8;
+      --sidebar-active: #1E293B;
+      --sidebar-hover: #1E293B;
+      --sidebar-brand: #FFFFFF;
+      --sidebar-width: 240px;
+      --bg: #F8FAFC;
+      --surface: #FFFFFF;
+      --fg: #0F172A;
+      --muted: #64748B;
+      --border: #E2E8F0;
+      --accent: #2563EB;
+      --accent-soft: #DBEAFE;
+      --cyan: #0891B2;
+      --cyan-soft: #CFFAFE;
+      --green: #16A34A;
+      --green-soft: #DCFCE7;
+      --red: #DC2626;
+      --red-soft: #FEE2E2;
+      --amber: #D97706;
+      --amber-soft: #FEF3C7;
+      --gray: #64748B;
+      --gray-soft: #F1F5F9;
+      --terminal-bg: #0B1120;
+      --terminal-text: #E2E8F0;
+      --terminal-border: #1E293B;
+      --font-body: 'Noto Sans Thai', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+      --fs-xs: 12px; --fs-sm: 13px; --fs-base: 14px; --fs-md: 15px;
+      --fs-lg: 16px; --fs-xl: 18px; --fs-2xl: 22px; --fs-3xl: 28px;
+      --radius: 8px; --radius-lg: 12px; --radius-sm: 6px; --radius-full: 999px;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -2px rgba(0,0,0,0.05);
+      --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.04);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      background: var(--bg); color: var(--fg);
+      font-family: var(--font-body); font-size: var(--fs-base); line-height: 1.5;
+      -webkit-font-smoothing: antialiased; overflow-x: hidden;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { font: inherit; cursor: pointer; border: none; background: none; }
+
+    .app { display: flex; min-height: 100vh; }
+
+    /* Sidebar */
+    .sidebar {
+      width: var(--sidebar-width); background: var(--sidebar-bg); color: var(--sidebar-text);
+      display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; z-index: 20;
+      transition: transform 0.2s ease, width 0.2s ease;
+    }
+    .sidebar-brand { padding: 20px 20px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .sidebar-brand h1 { font-size: var(--fs-xl); font-weight: 700; color: var(--sidebar-brand); letter-spacing: -0.02em; }
+    .sidebar-brand span { display: block; font-size: var(--fs-xs); color: var(--sidebar-text); margin-top: 2px; opacity: 0.7; }
+    .sidebar-nav { flex: 1; padding: 12px 8px; display: flex; flex-direction: column; gap: 2px; }
+    .sidebar-link {
+      display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+      border-radius: var(--radius); font-size: var(--fs-base); color: var(--sidebar-text);
+      transition: background 0.12s, color 0.12s;
+    }
+    .sidebar-link:hover { background: var(--sidebar-hover); color: #E2E8F0; }
+    .sidebar-link.active { background: var(--sidebar-active); color: #FFFFFF; }
+    .sidebar-link svg { width: 18px; height: 18px; opacity: 0.7; flex-shrink: 0; }
+    .sidebar-link.active svg { opacity: 1; }
+    .sidebar-link.disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
+    .sidebar-badge {
+      margin-left: auto; background: var(--accent); color: #fff;
+      font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: var(--radius-full);
+    }
+    .sidebar-section {
+      font-size: var(--fs-xs); font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.06em; color: rgba(148,163,184,0.5); padding: 16px 12px 6px;
+    }
+    .sidebar-footer { padding: 16px 12px; border-top: 1px solid rgba(255,255,255,0.06); }
+    .sidebar-footer .version { font-family: var(--font-mono); font-size: var(--fs-xs); color: rgba(148,163,184,0.4); }
+
+    .main { margin-left: var(--sidebar-width); flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+    .topbar {
+      position: sticky; top: 0; z-index: 15;
+      background: color-mix(in srgb, var(--surface) 92%, transparent);
+      backdrop-filter: blur(12px); border-bottom: 1px solid var(--border);
+      padding: 0 28px; height: 56px; display: flex; align-items: center; justify-content: space-between;
+    }
+    .topbar-left { display: flex; align-items: center; gap: 12px; }
+    .topbar-title { font-size: var(--fs-lg); font-weight: 600; }
+    .topbar-breadcrumb { font-size: var(--fs-sm); color: var(--muted); }
+    .topbar-right { display: flex; align-items: center; gap: 16px; }
+    .content { flex: 1; padding: 24px 28px; max-width: 720px; margin: 0 auto; width: 100%; }
+
+    /* Steps */
+    .steps { display: flex; align-items: center; margin-bottom: 32px; }
+    .step { display: flex; align-items: center; gap: 8px; font-size: var(--fs-sm); font-weight: 500; color: var(--muted); }
+    .step-num {
+      width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--border);
+      display: flex; align-items: center; justify-content: center; font-size: var(--fs-xs); font-weight: 600;
+    }
+    .step.active .step-num { border-color: var(--accent); background: var(--accent); color: #fff; }
+    .step.active { color: var(--fg); }
+    .step.done .step-num { border-color: var(--green); background: var(--green); color: #fff; }
+    .step.done { color: var(--fg); }
+    .step-line { width: 48px; height: 2px; background: var(--border); margin: 0 12px; }
+    .step-line.done { background: var(--green); }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex; align-items: center; gap: 7px; padding: 9px 18px;
+      border-radius: var(--radius); font-size: var(--fs-base); font-weight: 500; transition: all 0.12s ease;
+    }
+    .btn svg { width: 16px; height: 16px; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: #1D4ED8; }
+    .btn-primary:disabled { background: #93C5FD; cursor: not-allowed; }
+    .btn-secondary { background: var(--surface); color: var(--fg); border: 1px solid var(--border); }
+    .btn-secondary:hover { border-color: #CBD5E1; background: var(--bg); }
+    .btn-ghost { background: transparent; color: var(--muted); padding: 8px 12px; }
+    .btn-ghost:hover { color: var(--fg); background: var(--gray-soft); }
+    .btn-danger { background: var(--red); color: #fff; }
+    .btn-danger:hover { background: #B91C1C; }
+    .btn-group { display: flex; gap: 10px; justify-content: flex-end; margin-top: 32px; }
+
+    /* Card */
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 24px; box-shadow: var(--shadow-sm);
+    }
+
+    /* Field */
+    .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+    .field-label { font-size: var(--fs-sm); font-weight: 500; }
+    .field-hint { font-size: var(--fs-xs); color: var(--muted); }
+    .input {
+      padding: 9px 12px; border: 1px solid var(--border); border-radius: var(--radius);
+      background: var(--surface); color: var(--fg); font-size: var(--fs-base); transition: border-color 0.12s, box-shadow 0.12s;
+    }
+    .input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+    .input::placeholder { color: #94A3B8; }
+    .input-error { border-color: var(--red); }
+
+    /* Radio cards */
+    .radio-group { display: flex; flex-direction: column; gap: 10px; }
+    .radio-card {
+      display: flex; align-items: center; gap: 14px;
+      padding: 16px; border: 1px solid var(--border); border-radius: var(--radius-lg);
+      cursor: pointer; transition: border-color 0.12s, background 0.12s;
+    }
+    .radio-card:hover { border-color: #CBD5E1; }
+    .radio-card.selected { border-color: var(--accent); background: var(--accent-soft); }
+    .radio-dot {
+      width: 18px; height: 18px; border-radius: 50%; border: 2px solid #CBD5E1;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: border-color 0.12s;
+    }
+    .radio-card.selected .radio-dot { border-color: var(--accent); }
+    .radio-dot::after { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); opacity: 0; transition: opacity 0.12s; }
+    .radio-card.selected .radio-dot::after { opacity: 1; }
+    .radio-info h4 { font-size: var(--fs-base); font-weight: 600; margin-bottom: 2px; }
+    .radio-info p { font-size: var(--fs-sm); color: var(--muted); }
+
+    /* Badge */
+    .badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 10px; border-radius: var(--radius-full); font-size: var(--fs-xs); font-weight: 500;
+    }
+    .badge-green { background: var(--green-soft); color: var(--green); }
+    .badge-red { background: var(--red-soft); color: var(--red); }
+    .badge-amber { background: var(--amber-soft); color: var(--amber); }
+    .badge-gray { background: var(--gray-soft); color: var(--gray); }
+    .badge-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .badge-green .badge-dot { background: var(--green); }
+    .badge-red .badge-dot { background: var(--red); }
+    .badge-amber .badge-dot { background: var(--amber); }
+    .badge-gray .badge-dot { background: var(--gray); }
+
+    /* Spinner */
+    .spinner { width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.6s linear infinite; }
+    .spinner-sm { width: 14px; height: 14px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Test progress */
+    .test-steps { display: flex; flex-direction: column; gap: 0; }
+    .test-step {
+      display: flex; align-items: center; gap: 12px; padding: 12px 0;
+      border-bottom: 1px solid var(--border); font-size: var(--fs-sm);
+    }
+    .test-step:last-child { border-bottom: none; }
+    .test-step-icon { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; }
+    .test-step-icon svg { width: 16px; height: 16px; }
+    .test-step.pending .test-step-icon { color: var(--gray); }
+    .test-step.running .test-step-icon { color: var(--accent); }
+    .test-step.pass .test-step-icon { color: var(--green); }
+    .test-step.fail .test-step-icon { color: var(--red); }
+    .test-step-label { flex: 1; }
+    .test-step-status { font-family: var(--font-mono); font-size: var(--fs-xs); }
+
+    /* Radio */
+    .radio-input { display: flex; gap: 10px; flex-wrap: wrap; }
+    .radio-btn {
+      padding: 9px 16px; border: 1px solid var(--border); border-radius: var(--radius);
+      font-size: var(--fs-base); cursor: pointer; transition: all 0.12s;
+    }
+    .radio-btn:hover { border-color: #CBD5E1; }
+    .radio-btn.selected { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 500; }
+
+    /* Table */
+    .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ds-table { width: 100%; font-size: var(--fs-base); }
+    .ds-table th {
+      text-align: left; padding: 10px 16px; font-size: var(--fs-xs); font-weight: 600;
+      color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em;
+      background: var(--bg); border-bottom: 1px solid var(--border);
+    }
+    .ds-table td { padding: 10px 16px; border-bottom: 1px solid var(--border); }
+    .ds-table tbody tr:last-child td { border-bottom: none; }
+    .ds-table .mono { font-family: var(--font-mono); font-size: var(--fs-sm); }
+
+    /* Terminal preview */
+    .terminal {
+      background: var(--terminal-bg); border: 1px solid var(--terminal-border);
+      border-radius: var(--radius-lg); font-family: var(--font-mono); font-size: 13px;
+      color: var(--terminal-text); overflow: hidden;
+    }
+    .terminal-header {
+      padding: 10px 16px; border-bottom: 1px solid var(--terminal-border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .terminal-dots { display: flex; gap: 6px; }
+    .terminal-dots span { width: 10px; height: 10px; border-radius: 50%; }
+    .terminal-dots .red { background: #EF4444; }
+    .terminal-dots .yellow { background: #F59E0B; }
+    .terminal-dots .green { background: #22C55E; }
+    .terminal-body { padding: 16px; line-height: 1.6; min-height: 80px; }
+    .terminal-line { display: flex; gap: 0; }
+    .terminal-prompt { color: var(--green); white-space: nowrap; }
+    .terminal-output { color: #94A3B8; }
+
+    /* ─── Sidebar Collapse (Desktop) ────────────────────────────── */
+    .sidebar-toggle {
+      padding: 8px;
+      border-radius: var(--radius);
+    }
+    .sidebar-toggle:hover { background: var(--gray-soft); }
+
+    .sidebar.collapsed {
+      width: 64px;
+    }
+    .sidebar.collapsed .sidebar-brand h1,
+    .sidebar.collapsed .sidebar-brand span,
+    .sidebar.collapsed .sidebar-link span:not(.sidebar-badge),
+    .sidebar.collapsed .sidebar-section,
+    .sidebar.collapsed .sidebar-footer .version {
+      display: none;
+    }
+    .sidebar.collapsed .sidebar-brand {
+      padding: 20px 0 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .sidebar.collapsed .sidebar-brand h1 {
+      display: block;
+      font-size: var(--fs-sm);
+      width: auto;
+    }
+    .sidebar.collapsed .sidebar-nav {
+      padding: 12px 8px;
+      align-items: center;
+    }
+    .sidebar.collapsed .sidebar-link {
+      justify-content: center;
+      padding: 10px;
+      position: relative;
+    }
+    .sidebar.collapsed .sidebar-badge {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      margin-left: 0;
+      padding: 0 5px;
+      font-size: 10px;
+      min-width: 16px;
+      height: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .sidebar.collapsed ~ .sidebar-overlay { display: none !important; }
+    .sidebar.collapsed .sidebar-footer { padding: 16px 8px; text-align: center; }
+
+    .main {
+      margin-left: var(--sidebar-width);
+      transition: margin-left 0.2s ease;
+    }
+    .sidebar.collapsed ~ .main {
+      margin-left: 64px;
+    }
+
+    /* ─── Responsive (Tablet) ────────────────────────────────────── */
+    .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 19; }
+
+    @media (max-width: 1024px) {
+      .sidebar { transform: translateX(-100%); width: 240px; }
+      .sidebar.open { transform: translateX(0); }
+      .sidebar.collapsed { width: 240px; }
+      .sidebar.collapsed .sidebar-brand h1,
+      .sidebar.collapsed .sidebar-brand span,
+      .sidebar.collapsed .sidebar-link span:not(.sidebar-badge),
+      .sidebar.collapsed .sidebar-section,
+      .sidebar.collapsed .sidebar-footer .version {
+        display: revert;
+      }
+      .sidebar.collapsed .sidebar-brand {
+        padding: 20px 20px 16px;
+        display: block;
+      }
+      .sidebar.collapsed .sidebar-nav {
+        padding: 12px 8px;
+        align-items: stretch;
+      }
+      .sidebar.collapsed .sidebar-link {
+        justify-content: flex-start;
+        padding: 9px 12px;
+        position: static;
+      }
+      .sidebar.collapsed .sidebar-badge {
+        position: static;
+        margin-left: auto;
+        padding: 1px 7px;
+        font-size: 11px;
+        min-width: auto;
+        height: auto;
+      }
+      .sidebar.collapsed .sidebar-footer { padding: 16px 12px; text-align: left; }
+      .main { margin-left: 0 !important; }
+      .sidebar.open ~ .sidebar-overlay { display: block; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <h1>NetConfig</h1>
+        <span>Network Operations Console</span>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="index.html" class="sidebar-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          <span>Nodes</span>
+          <span class="sidebar-badge">4</span>
+        </a>
+        <a href="history.html" class="sidebar-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span>Command History</span>
+        </a>
+
+      </nav>
+      <div class="sidebar-footer">
+        <span class="version">v1.0.0-beta</span>
+      </div>
+    </aside>
+    <div class="sidebar-overlay" onclick="document.getElementById('sidebar').classList.remove('open')"></div>
+
+    <!-- Main -->
+    <div class="main">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="sidebar-toggle btn-icon" id="sidebar-toggle" onclick="toggleSidebar()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <a href="index.html" class="btn btn-ghost btn-sm" style="gap: 6px; color: var(--muted); padding: 4px 8px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+            Nodes
+          </a>
+          <span class="topbar-breadcrumb">/ Add Node</span>
+        </div>
+      </header>
+
+      <div class="content">
+        <!-- Steps indicator -->
+        <div class="steps">
+          <div class="step active" id="step-ind-1">
+            <span class="step-num">1</span>
+            <span>Device Info</span>
+          </div>
+          <div class="step-line" id="step-line-1"></div>
+          <div class="step" id="step-ind-2">
+            <span class="step-num">2</span>
+            <span>Protocol</span>
+          </div>
+          <div class="step-line" id="step-line-2"></div>
+          <div class="step" id="step-ind-3">
+            <span class="step-num">3</span>
+            <span>Test & Save</span>
+          </div>
+        </div>
+
+        <!-- Step 1: Device Info -->
+        <div id="step-1">
+          <div class="card" style="margin-bottom: 20px;">
+            <h3 style="font-size: var(--fs-lg); font-weight: 600; margin-bottom: 4px;">Device Information</h3>
+            <p style="font-size: var(--fs-sm); color: var(--muted); margin-bottom: 20px;">Enter the IP address or hostname of your Cisco device.</p>
+
+            <div class="field">
+              <label class="field-label">Device Name</label>
+              <input type="text" class="input" placeholder="e.g. R1, SW-Core" id="device-name" />
+              <span class="field-hint">A short label for this device.</span>
+            </div>
+            <div class="field">
+              <label class="field-label">IP Address / Hostname</label>
+              <input type="text" class="input" placeholder="e.g. 192.168.1.1" id="device-ip" style="font-family: var(--font-mono);" />
+              <span class="field-hint">The management IP for SSH, Telnet, or Serial connection.</span>
+            </div>
+            <div class="field">
+              <label class="field-label">Device Type</label>
+              <div class="radio-input">
+                <button class="radio-btn selected" onclick="selectDeviceType(this, 'router')">Router</button>
+                <button class="radio-btn" onclick="selectDeviceType(this, 'switch')">Switch</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="btn-group">
+            <a href="index.html" class="btn btn-secondary">Cancel</a>
+            <button class="btn btn-primary" onclick="goToStep(2)">
+              Next: Protocol
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Step 2: Protocol -->
+        <div id="step-2" style="display: none;">
+          <div class="card" style="margin-bottom: 20px;">
+            <h3 style="font-size: var(--fs-lg); font-weight: 600; margin-bottom: 4px;">Connection Protocol</h3>
+            <p style="font-size: var(--fs-sm); color: var(--muted); margin-bottom: 20px;">Choose how to connect to the device.</p>
+
+            <div class="radio-group">
+              <div class="radio-card selected" onclick="selectProtocol(this, 'ssh')">
+                <div class="radio-dot"></div>
+                <div class="radio-info">
+                  <h4>SSH</h4>
+                  <p>Secure Shell — encrypted, recommended for production. Port 22.</p>
+                </div>
+              </div>
+              <div class="radio-card" onclick="selectProtocol(this, 'telnet')">
+                <div class="radio-dot"></div>
+                <div class="radio-info">
+                  <h4>Telnet</h4>
+                  <p>Unencrypted legacy protocol. Port 23. Use only in lab environments.</p>
+                </div>
+              </div>
+              <div class="radio-card" onclick="selectProtocol(this, 'serial')">
+                <div class="radio-dot"></div>
+                <div class="radio-info">
+                  <h4>Serial (Console)</h4>
+                  <p>Direct console connection via COM port. Requires local serial adapter.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- SSH/Telnet credentials -->
+            <div id="credentials-fields" style="margin-top: 20px;">
+              <div class="field">
+                <label class="field-label">Username <span style="color:var(--muted); font-weight:400;">(optional for Telnet/Serial console)</span></label>
+                <input type="text" class="input" placeholder="e.g. admin" id="conn-username" />
+              </div>
+              <div class="field">
+                <label class="field-label">Password <span style="color:var(--muted); font-weight:400;">(optional for Serial console)</span></label>
+                <input type="password" class="input" placeholder="Enter password" id="conn-password" />
+              </div>
+            </div>
+
+            <!-- Serial port -->
+            <div id="serial-fields" style="display: none; margin-top: 20px;">
+              <div class="field">
+                <label class="field-label">COM Port</label>
+                <select class="input" id="serial-port" style="width: auto;">
+                  <option>COM1</option>
+                  <option>COM2</option>
+                  <option selected>COM3</option>
+                  <option>COM4</option>
+                </select>
+              </div>
+              <div class="field">
+                <label class="field-label">Baud Rate</label>
+                <select class="input" id="serial-baud" style="width: auto;">
+                  <option>9600</option>
+                  <option selected>115200</option>
+                  <option>19200</option>
+                  <option>38400</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="btn-group">
+            <button class="btn btn-secondary" onclick="goToStep(1)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+              Back
+            </button>
+            <button class="btn btn-primary" onclick="goToStep(3)">
+              Next: Test Connection
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Step 3: Test & Save (Node is persisted only after a successful test) -->
+        <div id="step-3" style="display: none;">
+          <div class="card" style="margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+              <div>
+                <h3 style="font-size: var(--fs-lg); font-weight: 600; margin-bottom: 2px;">Test Connection</h3>
+                <p style="font-size: var(--fs-sm); color: var(--muted);">Run diagnostics on <strong id="test-device-label">R1</strong> before saving. A failed test will not create a node.</p>
+              </div>
+              <button class="btn btn-sm btn-secondary" onclick="startTest()" id="retry-btn" style="display: none;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                Retry
+              </button>
+            </div>
+
+            <div class="test-steps" id="test-steps">
+              <div class="test-step pending" id="test-ping">
+                <div class="test-step-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                </div>
+                <span class="test-step-label">Ping test</span>
+                <span class="test-step-status" id="test-ping-status">—</span>
+              </div>
+              <div class="test-step pending" id="test-port">
+                <div class="test-step-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                </div>
+                <span class="test-step-label">Port check (22/23)</span>
+                <span class="test-step-status" id="test-port-status">—</span>
+              </div>
+              <div class="test-step pending" id="test-login">
+                <div class="test-step-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                </div>
+                <span class="test-step-label">Login authentication</span>
+                <span class="test-step-status" id="test-login-status">—</span>
+              </div>
+              <div class="test-step pending" id="test-hostname">
+                <div class="test-step-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                </div>
+                <span class="test-step-label">Read hostname</span>
+                <span class="test-step-status" id="test-hostname-status">—</span>
+              </div>
+            </div>
+            <div id="test-failure-note" style="display:none; margin-top:16px; padding:12px; border:1px solid #fecaca; border-radius:var(--radius); background:#fef2f2; color:#b91c1c; font-size:var(--fs-sm);">
+              Connection test failed. The node is not saved. Fix the connection and retry.
+            </div>
+          </div>
+
+          <!-- Success summary (shown after a passing test; only then may the node be saved) -->
+          <div class="card" id="test-summary" style="display: none; margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              <span style="font-weight: 600; color: var(--green);">Connection Successful</span>
+            </div>
+            <div class="table-wrap">
+              <table class="ds-table">
+                <tbody>
+                  <tr><td style="color:var(--muted); width:120px;">Hostname</td><td><strong id="sum-hostname">R1</strong></td></tr>
+                  <tr><td style="color:var(--muted);">IP Address</td><td class="mono" id="sum-ip">192.168.1.11</td></tr>
+                  <tr><td style="color:var(--muted);">Protocol</td><td id="sum-proto">SSH</td></tr>
+                  <tr><td style="color:var(--muted);">Device Type</td><td id="sum-type">Router</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="btn-group">
+            <button class="btn btn-secondary" onclick="goToStep(2)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+              Back
+            </button>
+            <button class="btn btn-primary" id="save-btn" onclick="saveNode()" disabled>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              Save Node
+            </button>
+          </div>
+        </div>
+
+        <!-- Success state -->
+        <div id="step-success" style="display: none;">
+          <div class="card" style="text-align: center; padding: 48px 24px;">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" style="margin: 0 auto 16px;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            <h3 style="font-size: var(--fs-xl); font-weight: 600; margin-bottom: 8px;">Node Added Successfully</h3>
+            <p style="color: var(--muted); margin-bottom: 24px;">Device is connected and ready for configuration.</p>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+              <a href="node-detail.html" class="btn btn-primary">
+                Configure Device
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+              </a>
+              <a href="index.html" class="btn btn-secondary">Back to Dashboard</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Sidebar collapse state
+    (function() {
+      const sidebar = document.getElementById('sidebar');
+      const isTablet = window.matchMedia('(max-width: 1024px)').matches;
+      if (!isTablet) {
+        const saved = localStorage.getItem('netconfig-sidebar-collapsed');
+        if (saved === 'true') sidebar.classList.add('collapsed');
+      }
+    })();
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const isTablet = window.matchMedia('(max-width: 1024px)').matches;
+      if (isTablet) {
+        sidebar.classList.toggle('open');
+      } else {
+        sidebar.classList.toggle('collapsed');
+        localStorage.setItem('netconfig-sidebar-collapsed', sidebar.classList.contains('collapsed'));
+      }
+    }
+
+    let currentStep = 1;
+    let selectedProtocol = 'ssh';
+    let selectedDeviceType = 'router';
+
+    function goToStep(step) {
+      document.getElementById('step-1').style.display = step === 1 ? '' : 'none';
+      document.getElementById('step-2').style.display = step === 2 ? '' : 'none';
+      document.getElementById('step-3').style.display = step === 3 ? '' : 'none';
+      document.getElementById('step-success').style.display = 'none';
+
+      for (let i = 1; i <= 3; i++) {
+        const ind = document.getElementById('step-ind-' + i);
+        ind.classList.remove('active', 'done');
+        if (i < step) ind.classList.add('done');
+        else if (i === step) ind.classList.add('active');
+
+        const line = document.getElementById('step-line-' + i);
+        if (line) line.classList.toggle('done', i < step);
+      }
+      currentStep = step;
+
+      if (step === 3) {
+        document.getElementById('test-device-label').textContent = document.getElementById('device-name').value || 'Device';
+        startTest();
+      }
+    }
+
+    function selectProtocol(el, proto) {
+      document.querySelectorAll('.radio-card').forEach(c => c.classList.remove('selected'));
+      el.classList.add('selected');
+      selectedProtocol = proto;
+
+      const credFields = document.getElementById('credentials-fields');
+      const serialFields = document.getElementById('serial-fields');
+      if (proto === 'serial') {
+        credFields.style.display = 'none';
+        serialFields.style.display = '';
+      } else {
+        credFields.style.display = '';
+        serialFields.style.display = 'none';
+      }
+    }
+
+    function selectDeviceType(el, type) {
+      document.querySelectorAll('.radio-btn').forEach(b => b.classList.remove('selected'));
+      el.classList.add('selected');
+      selectedDeviceType = type;
+    }
+
+    function startTest() {
+      document.getElementById('retry-btn').style.display = 'none';
+      document.getElementById('test-summary').style.display = 'none';
+      document.getElementById('test-failure-note').style.display = 'none';
+      document.getElementById('save-btn').disabled = true;
+
+      const steps = ['ping', 'port', 'login', 'hostname'];
+      steps.forEach(s => {
+        const el = document.getElementById('test-' + s);
+        el.className = 'test-step pending';
+        document.getElementById('test-' + s + '-status').textContent = '—';
+      });
+
+      let delay = 0;
+      let failedTest = false;
+      steps.forEach((step, i) => {
+        delay += 600 + Math.random() * 400;
+        setTimeout(() => {
+          if (failedTest) return;
+          const el = document.getElementById('test-' + step);
+          const statusEl = document.getElementById('test-' + step + '-status');
+          el.className = 'test-step running';
+          statusEl.innerHTML = '<span class="spinner spinner-sm"></span>';
+
+          setTimeout(() => {
+            const fail = Math.random() < 0.15 && i < 2;
+            if (fail && step !== 'hostname') {
+              failedTest = true;
+              el.className = 'test-step fail';
+              statusEl.textContent = 'Failed';
+              document.getElementById('retry-btn').style.display = '';
+              document.getElementById('test-failure-note').style.display = '';
+            } else {
+              el.className = 'test-step pass';
+              const durations = { ping: '2ms', port: '12ms', login: '180ms' };
+              statusEl.textContent = durations[step] || (step === 'hostname' ? 'R1' : 'OK');
+
+              if (step === 'hostname') {
+                document.getElementById('test-summary').style.display = '';
+                document.getElementById('test-summary').querySelector('strong').textContent = document.getElementById('device-name').value || 'R1';
+                document.getElementById('sum-ip').textContent = document.getElementById('device-ip').value || '192.168.1.1';
+                document.getElementById('sum-proto').textContent = selectedProtocol.toUpperCase();
+                document.getElementById('sum-type').textContent = selectedDeviceType.charAt(0).toUpperCase() + selectedDeviceType.slice(1);
+                document.getElementById('save-btn').disabled = false;
+              }
+            }
+          }, 300);
+        }, delay);
+      });
+    }
+
+    function saveNode() {
+      document.getElementById('step-3').style.display = 'none';
+      document.getElementById('step-success').style.display = '';
+      for (let i = 1; i <= 3; i++) {
+        document.getElementById('step-ind-' + i).classList.remove('active');
+        document.getElementById('step-ind-' + i).classList.add('done');
+      }
+      document.getElementById('step-line-1').classList.add('done');
+      document.getElementById('step-line-2').classList.add('done');
+    }
+
+    // Keyboard: Enter to advance
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && currentStep < 3) {
+        goToStep(currentStep + 1);
+      }
+    });
+  </script>
+</body>
+</html>

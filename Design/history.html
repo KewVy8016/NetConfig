@@ -1,0 +1,522 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Command History — NetConfig</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --sidebar-bg: #0F172A; --sidebar-text: #94A3B8; --sidebar-active: #1E293B;
+      --sidebar-hover: #1E293B; --sidebar-brand: #FFFFFF; --sidebar-width: 240px;
+      --bg: #F8FAFC; --surface: #FFFFFF; --fg: #0F172A; --muted: #64748B;
+      --border: #E2E8F0; --accent: #2563EB; --accent-soft: #DBEAFE;
+      --cyan: #0891B2; --cyan-soft: #CFFAFE;
+      --green: #16A34A; --green-soft: #DCFCE7;
+      --red: #DC2626; --red-soft: #FEE2E2;
+      --amber: #D97706; --amber-soft: #FEF3C7;
+      --gray: #64748B; --gray-soft: #F1F5F9;
+      --terminal-bg: #0B1120; --terminal-text: #E2E8F0; --terminal-border: #1E293B;
+      --font-body: 'Noto Sans Thai', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+      --fs-xs: 12px; --fs-sm: 13px; --fs-base: 14px; --fs-md: 15px;
+      --fs-lg: 16px; --fs-xl: 18px;
+      --radius: 8px; --radius-lg: 12px; --radius-full: 999px;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: var(--fs-base); line-height: 1.5; -webkit-font-smoothing: antialiased; }
+    a { color: inherit; text-decoration: none; }
+    button { font: inherit; cursor: pointer; border: none; background: none; }
+    table { border-collapse: collapse; width: 100%; }
+
+    .app { display: flex; min-height: 100vh; }
+
+    .sidebar { width: var(--sidebar-width); background: var(--sidebar-bg); color: var(--sidebar-text); display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; z-index: 20; transition: transform 0.2s ease, width 0.2s ease; }
+    .sidebar-brand { padding: 20px 20px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .sidebar-brand h1 { font-size: var(--fs-xl); font-weight: 700; color: var(--sidebar-brand); letter-spacing: -0.02em; }
+    .sidebar-brand span { display: block; font-size: var(--fs-xs); color: var(--sidebar-text); margin-top: 2px; opacity: 0.7; }
+    .sidebar-nav { flex: 1; padding: 12px 8px; display: flex; flex-direction: column; gap: 2px; }
+    .sidebar-link { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: var(--radius); font-size: var(--fs-base); color: var(--sidebar-text); transition: background 0.12s, color 0.12s; }
+    .sidebar-link:hover { background: var(--sidebar-hover); color: #E2E8F0; }
+    .sidebar-link.active { background: var(--sidebar-active); color: #FFFFFF; }
+    .sidebar-link svg { width: 18px; height: 18px; opacity: 0.7; flex-shrink: 0; }
+    .sidebar-link.active svg { opacity: 1; }
+    .sidebar-link.disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
+    .sidebar-badge { margin-left: auto; background: var(--accent); color: #fff; font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: var(--radius-full); }
+    .sidebar-section { font-size: var(--fs-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: rgba(148,163,184,0.5); padding: 16px 12px 6px; }
+    .sidebar-footer { padding: 16px 12px; border-top: 1px solid rgba(255,255,255,0.06); }
+    .sidebar-footer .version { font-family: var(--font-mono); font-size: var(--fs-xs); color: rgba(148,163,184,0.4); }
+
+    .main { margin-left: var(--sidebar-width); flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+    .topbar { position: sticky; top: 0; z-index: 15; background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 0 28px; height: 56px; display: flex; align-items: center; justify-content: space-between; }
+    .topbar-left { display: flex; align-items: center; gap: 12px; }
+    .topbar-title { font-size: var(--fs-lg); font-weight: 600; }
+    .topbar-breadcrumb { font-size: var(--fs-sm); color: var(--muted); }
+    .content { flex: 1; padding: 24px 28px; }
+
+    .btn { display: inline-flex; align-items: center; gap: 7px; padding: 8px 16px; border-radius: var(--radius); font-size: var(--fs-base); font-weight: 500; transition: all 0.12s; }
+    .btn svg { width: 16px; height: 16px; }
+    .btn-secondary { background: var(--surface); color: var(--fg); border: 1px solid var(--border); }
+    .btn-secondary:hover { border-color: #CBD5E1; background: var(--bg); }
+    .btn-ghost { background: transparent; color: var(--muted); padding: 6px 10px; }
+    .btn-ghost:hover { color: var(--fg); background: var(--gray-soft); }
+    .btn-sm { padding: 5px 10px; font-size: var(--fs-sm); }
+    .btn-icon { padding: 7px; border-radius: var(--radius); }
+    .btn-icon:hover { background: var(--gray-soft); }
+
+    .badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: var(--radius-full); font-size: var(--fs-xs); font-weight: 500; }
+    .badge-green { background: var(--green-soft); color: var(--green); }
+    .badge-red { background: var(--red-soft); color: var(--red); }
+    .badge-amber { background: var(--amber-soft); color: var(--amber); }
+    .badge-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .badge-green .badge-dot { background: var(--green); }
+    .badge-red .badge-dot { background: var(--red); }
+    .badge-amber .badge-dot { background: var(--amber); }
+
+    .input { padding: 9px 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--fg); font-size: var(--fs-base); transition: border-color 0.12s, box-shadow 0.12s; }
+    .input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+    .input::placeholder { color: #94A3B8; }
+    select.input { appearance: none; background-image: url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 32px; }
+
+    .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ds-table { width: 100%; font-size: var(--fs-base); }
+    .ds-table th { text-align: left; padding: 10px 16px; font-size: var(--fs-xs); font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; background: var(--bg); border-bottom: 1px solid var(--border); }
+    .ds-table td { padding: 12px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .ds-table tbody tr:last-child td { border-bottom: none; }
+    .ds-table tbody tr:hover { background: #F8FAFC; }
+    .ds-table .mono { font-family: var(--font-mono); font-size: var(--fs-sm); }
+
+    .expand-row { display: none; }
+    .expand-row.open { display: table-row; }
+    .expand-row td { background: #F8FAFC; padding: 16px; }
+    .expand-content { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .expand-block { font-family: var(--font-mono); font-size: 13px; line-height: 1.7; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; white-space: pre-wrap; max-height: 200px; overflow-y: auto; }
+    .expand-block.success { border-left: 3px solid var(--green); }
+    .expand-block.error { border-left: 3px solid var(--red); }
+
+    /* ─── Sidebar Collapse (Desktop) ────────────────────────────── */
+    .sidebar-toggle {
+      padding: 8px;
+      border-radius: var(--radius);
+    }
+    .sidebar-toggle:hover { background: var(--gray-soft); }
+
+    .sidebar.collapsed {
+      width: 64px;
+    }
+    .sidebar.collapsed .sidebar-brand h1,
+    .sidebar.collapsed .sidebar-brand span,
+    .sidebar.collapsed .sidebar-link span:not(.sidebar-badge),
+    .sidebar.collapsed .sidebar-section,
+    .sidebar.collapsed .sidebar-footer .version {
+      display: none;
+    }
+    .sidebar.collapsed .sidebar-brand {
+      padding: 20px 0 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .sidebar.collapsed .sidebar-brand h1 {
+      display: block;
+      font-size: var(--fs-sm);
+      width: auto;
+    }
+    .sidebar.collapsed .sidebar-nav {
+      padding: 12px 8px;
+      align-items: center;
+    }
+    .sidebar.collapsed .sidebar-link {
+      justify-content: center;
+      padding: 10px;
+      position: relative;
+    }
+    .sidebar.collapsed .sidebar-badge {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      margin-left: 0;
+      padding: 0 5px;
+      font-size: 10px;
+      min-width: 16px;
+      height: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .sidebar.collapsed ~ .sidebar-overlay { display: none !important; }
+    .sidebar.collapsed .sidebar-footer { padding: 16px 8px; text-align: center; }
+
+    .main {
+      margin-left: var(--sidebar-width);
+      transition: margin-left 0.2s ease;
+    }
+    .sidebar.collapsed ~ .main {
+      margin-left: 64px;
+    }
+
+    /* ─── Responsive (Tablet) ────────────────────────────────────── */
+    .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 19; }
+
+    @media (max-width: 1024px) {
+      .sidebar { transform: translateX(-100%); width: 240px; }
+      .sidebar.open { transform: translateX(0); }
+      .sidebar.collapsed { width: 240px; }
+      .sidebar.collapsed .sidebar-brand h1,
+      .sidebar.collapsed .sidebar-brand span,
+      .sidebar.collapsed .sidebar-link span:not(.sidebar-badge),
+      .sidebar.collapsed .sidebar-section,
+      .sidebar.collapsed .sidebar-footer .version {
+        display: revert;
+      }
+      .sidebar.collapsed .sidebar-brand {
+        padding: 20px 20px 16px;
+        display: block;
+      }
+      .sidebar.collapsed .sidebar-nav {
+        padding: 12px 8px;
+        align-items: stretch;
+      }
+      .sidebar.collapsed .sidebar-link {
+        justify-content: flex-start;
+        padding: 9px 12px;
+        position: static;
+      }
+      .sidebar.collapsed .sidebar-badge {
+        position: static;
+        margin-left: auto;
+        padding: 1px 7px;
+        font-size: 11px;
+        min-width: auto;
+        height: auto;
+      }
+      .sidebar.collapsed .sidebar-footer { padding: 16px 12px; text-align: left; }
+      .main { margin-left: 0 !important; }
+      .sidebar.open ~ .sidebar-overlay { display: block; }
+      .expand-content { grid-template-columns: 1fr; }
+    }
+
+    .toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 50; display: flex; flex-direction: column; gap: 8px; }
+    .toast { background: var(--sidebar-bg); color: #fff; padding: 12px 16px; border-radius: var(--radius); font-size: var(--fs-sm); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.08); display: flex; align-items: center; gap: 10px; min-width: 280px; animation: slideIn 0.2s ease; }
+    .toast-success { border-left: 3px solid var(--green); }
+    @keyframes slideIn { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand"><h1>NetConfig</h1><span>Network Operations Console</span></div>
+      <nav class="sidebar-nav">
+        <a href="index.html" class="sidebar-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          <span>Nodes</span> <span class="sidebar-badge">4</span>
+        </a>
+        <a href="history.html" class="sidebar-link active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span>Command History</span>
+        </a>
+
+      </nav>
+      <div class="sidebar-footer"><span class="version">v1.0.0-beta</span></div>
+    </aside>
+    <div class="sidebar-overlay" onclick="document.getElementById('sidebar').classList.remove('open')"></div>
+
+    <div class="main">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="sidebar-toggle btn-icon" id="sidebar-toggle" onclick="toggleSidebar()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <a href="index.html" class="btn btn-ghost btn-sm" style="gap: 6px; color: var(--muted); padding: 4px 8px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+            Nodes
+          </a>
+          <span class="topbar-breadcrumb">/ Command History</span>
+        </div>
+      </header>
+
+      <div class="content">
+        <!-- Filters -->
+        <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;">
+          <select class="input" style="width: auto; min-width: 140px;" id="filter-node">
+            <option value="all">All Nodes</option>
+            <option value="R1">R1</option>
+            <option value="R2">R2</option>
+            <option value="SW1">SW1</option>
+          </select>
+          <select class="input" style="width: auto; min-width: 140px;" id="filter-status">
+            <option value="all">All Status</option>
+            <option value="success">Success</option>
+            <option value="error">Error</option>
+          </select>
+          <div style="flex: 1;"></div>
+          <button class="btn btn-ghost btn-sm" onclick="clearHistory()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            Clear History
+          </button>
+        </div>
+
+        <div class="table-wrap">
+          <table class="ds-table">
+            <thead>
+              <tr>
+                <th style="width: 32px;"></th>
+                <th>Time</th>
+                <th>Node</th>
+                <th>Command Type</th>
+                <th>Status</th>
+                <th style="text-align: right;">Details</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Row 1 -->
+              <tr onclick="toggleExpand('row-1')" style="cursor: pointer;">
+                <td><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" id="chevron-row-1"><polyline points="6 9 12 15 18 9"/></svg></td>
+                <td class="mono" style="white-space: nowrap;">14:32:18</td>
+                <td><strong>R1</strong></td>
+                <td>OSPF Configuration</td>
+                <td><span class="badge badge-green"><span class="badge-dot"></span> Success</span></td>
+                <td style="text-align: right;"><button class="btn btn-ghost btn-sm">View</button></td>
+              </tr>
+              <tr class="expand-row" id="row-1">
+                <td colspan="6">
+                  <div class="expand-content">
+                    <div>
+                      <div style="font-size: var(--fs-sm); font-weight: 600; margin-bottom: 8px; color: var(--muted);">Command</div>
+                      <div class="expand-block success">router ospf 1
+router-id 1.1.1.1
+network 10.0.12.0 0.0.0.255 area 0
+network 1.1.1.1 0.0.0.0 area 0</div>
+                    </div>
+                    <div>
+                      <div style="font-size: var(--fs-sm); font-weight: 600; margin-bottom: 8px; color: var(--muted);">Result</div>
+                      <div class="expand-block success">Configuration applied successfully.
+OSPF process 1 started with router-id 1.1.1.1
+OSPF: Configured 2 network statements</div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- Row 2 -->
+              <tr onclick="toggleExpand('row-2')" style="cursor: pointer;">
+                <td><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" id="chevron-row-2"><polyline points="6 9 12 15 18 9"/></svg></td>
+                <td class="mono" style="white-space: nowrap;">14:31:45</td>
+                <td><strong>R1</strong></td>
+                <td>Interface Configuration</td>
+                <td><span class="badge badge-green"><span class="badge-dot"></span> Success</span></td>
+                <td style="text-align: right;"><button class="btn btn-ghost btn-sm">View</button></td>
+              </tr>
+              <tr class="expand-row" id="row-2">
+                <td colspan="6">
+                  <div class="expand-content">
+                    <div>
+                      <div style="font-size: var(--fs-sm); font-weight: 600; margin-bottom: 8px; color: var(--muted);">Command</div>
+                      <div class="expand-block success">interface GigabitEthernet0/0
+ip address 192.168.1.11 255.255.255.0
+no shutdown</div>
+                    </div>
+                    <div>
+                      <div style="font-size: var(--fs-sm); font-weight: 600; margin-bottom: 8px; color: var(--muted);">Result</div>
+                      <div class="expand-block success">Interface GigabitEthernet0/0, changed state to up
+Line protocol on Interface GigabitEthernet0/0, changed state to up</div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- Row 3 -->
+              <tr onclick="toggleExpand('row-3')" style="cursor: pointer;">
+                <td><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" id="chevron-row-3"><polyline points="6 9 12 15 18 9"/></svg></td>
+                <td class="mono" style="white-space: nowrap;">14:30:22</td>
+                <td><strong>R2</strong></td>
+                <td>Static Route</td>
+                <td><span class="badge badge-green"><span class="badge-dot"></span> Success</span></td>
+                <td style="text-align: right;"><button class="btn btn-ghost btn-sm">View</button></td>
+              </tr>
+              <tr class="expand-row" id="row-3">
+                <td colspan="6">
+                  <div class="expand-content">
+                    <div>
+                      <div style="font-size: var(--fs-sm); font-weight: 600; margin-bottom: 8px; color: var(--muted);">Command</div>
+                      <div class="expand-block success">ip route 172.16.0.0 255.255.0.0 10.0.12.1</div>
+                    </div>
+                    <div>
+                      <div style="font-size: var(--fs-sm); font-weight: 600; margin-bottom: 8px; color: var(--muted);">Result</div>
+                      <div class="expand-block success">Static route added to routing table.</div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- Row 4 -->
+              <tr onclick="toggleExpand('row-4')" style="cursor: pointer;">
+                <td><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" id="chevron-row-4"><polyline points="6 9 12 15 18 9"/></svg></td>
+                <td class="mono" style="white-space: nowrap;">14:28:09</td>
+                <td><strong>SW1</strong></td>
+                <td>Interface Configuration</td>
+                <td><span class="badge badge-red"><span class="badge-dot"></span> Error</span></td>
+                <td style="text-align: right;"><button class="btn btn-ghost btn-sm">View</button></td>
+              </tr>
+              <tr class="expand-row" id="row-4">
+                <td colspan="6">
+                  <div class="expand-content">
+                    <div>
+                      <div style="font-size: var(--fs-sm); font-weight: 600; margin-bottom: 8px; color: var(--muted);">Command</div>
+                      <div class="expand-block error">interface Vlan10
+ip address 192.168.10.1 255.255.255.0
+no shutdown</div>
+                    </div>
+                    <div>
+                      <div style="font-size: var(--fs-sm); font-weight: 600; margin-bottom: 8px; color: var(--muted);">Result</div>
+                      <div class="expand-block error">% Invalid input detected at '^' marker.
+% Device unreachable — connection timed out</div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- Row 5 -->
+              <tr onclick="toggleExpand('row-5')" style="cursor: pointer;">
+                <td><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" id="chevron-row-5"><polyline points="6 9 12 15 18 9"/></svg></td>
+                <td class="mono" style="white-space: nowrap;">14:25:33</td>
+                <td><strong>R1</strong></td>
+                <td>Show Command</td>
+                <td><span class="badge badge-green"><span class="badge-dot"></span> Success</span></td>
+                <td style="text-align: right;"><button class="btn btn-ghost btn-sm">View</button></td>
+              </tr>
+              <tr class="expand-row" id="row-5">
+                <td colspan="6">
+                  <div class="expand-content">
+                    <div>
+                      <div style="font-size: var(--fs-sm); font-weight: 600; margin-bottom: 8px; color: var(--muted);">Command</div>
+                      <div class="expand-block success">show ip route</div>
+                    </div>
+                    <div>
+                      <div style="font-size: var(--fs-sm); font-weight: 600; margin-bottom: 8px; color: var(--muted);">Result</div>
+                      <div class="expand-block success">Codes: L - local, C - connected, S - static, R - RIP
+Gateway of last resort is 192.168.1.1 to network 0.0.0.0
+
+S*   0.0.0.0/0 [1/0] via 192.168.1.1
+     10.0.0.0/8 is variably subnetted, 3 subnets
+C        10.0.12.0/24 is directly connected, Gi0/1
+L        10.0.12.1/32 is directly connected, Gi0/1</div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- Row 6 -->
+              <tr onclick="toggleExpand('row-6')" style="cursor: pointer;">
+                <td><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" id="chevron-row-6"><polyline points="6 9 12 15 18 9"/></svg></td>
+                <td class="mono" style="white-space: nowrap;">14:22:11</td>
+                <td><strong>R1</strong></td>
+                <td>Write Memory</td>
+                <td><span class="badge badge-green"><span class="badge-dot"></span> Success</span></td>
+                <td style="text-align: right;"><button class="btn btn-ghost btn-sm">View</button></td>
+              </tr>
+              <tr class="expand-row" id="row-6">
+                <td colspan="6">
+                  <div class="expand-content">
+                    <div>
+                      <div style="font-size: var(--fs-sm); font-weight: 600; margin-bottom: 8px; color: var(--muted);">Command</div>
+                      <div class="expand-block success">write memory</div>
+                    </div>
+                    <div>
+                      <div style="font-size: var(--fs-sm); font-weight: 600; margin-bottom: 8px; color: var(--muted);">Result</div>
+                      <div class="expand-block success">Building configuration...
+[OK]</div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toast-container"></div>
+
+  <script>
+    // Sidebar collapse state
+    (function() {
+      const sidebar = document.getElementById('sidebar');
+      const isTablet = window.matchMedia('(max-width: 1024px)').matches;
+      if (!isTablet) {
+        const saved = localStorage.getItem('netconfig-sidebar-collapsed');
+        if (saved === 'true') sidebar.classList.add('collapsed');
+      }
+    })();
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const isTablet = window.matchMedia('(max-width: 1024px)').matches;
+      if (isTablet) {
+        sidebar.classList.toggle('open');
+      } else {
+        sidebar.classList.toggle('collapsed');
+        localStorage.setItem('netconfig-sidebar-collapsed', sidebar.classList.contains('collapsed'));
+      }
+    }
+
+    function toggleExpand(id) {
+      const row = document.getElementById(id);
+      const chevron = document.getElementById('chevron-' + id);
+      const isOpen = row.classList.contains('open');
+
+      // Close all
+      document.querySelectorAll('.expand-row').forEach(r => r.classList.remove('open'));
+      document.querySelectorAll('[id^="chevron-"]').forEach(c => { c.style.transform = ''; });
+
+      if (!isOpen) {
+        row.classList.add('open');
+        chevron.style.transform = 'rotate(180deg)';
+      }
+    }
+
+    function clearHistory() {
+      if (confirm('Clear all command history? This cannot be undone.')) {
+        document.querySelector('.ds-table tbody').innerHTML = `
+          <tr><td colspan="6" style="text-align: center; padding: 48px; color: var(--muted);">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin: 0 auto 12px; display: block; opacity: 0.4;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            No command history yet.
+          </td></tr>
+        `;
+        showToast('History cleared');
+      }
+    }
+
+    function showToast(msg) {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = 'toast toast-success';
+      toast.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><span>${msg}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    // Filter
+    document.getElementById('filter-node').addEventListener('change', filterTable);
+    document.getElementById('filter-status').addEventListener('change', filterTable);
+
+    function filterTable() {
+      const node = document.getElementById('filter-node').value;
+      const status = document.getElementById('filter-status').value;
+      const rows = document.querySelectorAll('.ds-table tbody tr:not(.expand-row)');
+
+      rows.forEach(row => {
+        const rowNode = row.querySelector('strong')?.textContent || '';
+        const rowStatus = row.querySelector('.badge')?.classList.contains('badge-green') ? 'success' : 'error';
+        const matchNode = node === 'all' || rowNode === node;
+        const matchStatus = status === 'all' || rowStatus === status;
+        row.style.display = matchNode && matchStatus ? '' : 'none';
+      });
+    }
+  </script>
+</body>
+</html>
