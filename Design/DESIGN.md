@@ -287,7 +287,8 @@ an interface that already exists. A compact **Additional Configuration** launche
 forms in a centered dialog: Loopback for every node, plus L2 Access Port, L3 Routed Port, and
 VLAN/SVI for nodes saved as Switch. The dialog closes with its close button, backdrop, or Escape;
 opening/closing it never sends commands. Preview closes the dialog and opens the common command
-preview drawer.
+preview drawer. Each form dialog is mounted at the page root and centered in the viewport rather
+than within the scrolled Interface layout; on shorter screens the dialog body scrolls internally.
 
 The Loopback dialog lets a user enter a non-negative
 Loopback number, IPv4 address, subnet mask, optional description, and administrative state. The

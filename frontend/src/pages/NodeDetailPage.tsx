@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AlertCircle, CheckCircle2, ChevronLeft, Copy, Eye, Loader2, RefreshCw, Save, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useForm } from 'react-hook-form'
 import { Link, useParams } from 'react-router-dom'
 import { z } from 'zod'
@@ -840,16 +841,17 @@ function ConfigPopupButton({ title, detail, onClick }: { title: string; detail: 
 
 /** Dialog กลางสำหรับฟอร์ม config เพิ่มเติม ปิดได้ด้วยปุ่ม ฉากหลัง และ Escape */
 function ConfigPopup({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
-  return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-gray-950/40 p-4" role="presentation" onMouseDown={onClose}>
-      <section className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl bg-white shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="config-popup-title" onMouseDown={(event) => event.stopPropagation()}>
+  return createPortal(
+    <div className="dialog-overlay overflow-y-auto" role="presentation" onMouseDown={onClose}>
+      <section className="dialog-panel my-auto max-w-2xl max-h-[calc(100dvh-2rem)] overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="config-popup-title" onMouseDown={(event) => event.stopPropagation()}>
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 bg-white px-5 py-4">
           <h2 id="config-popup-title" className="text-lg font-semibold">{title}</h2>
           <button type="button" className="rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500" onClick={onClose} aria-label="ปิดหน้าต่าง" autoFocus><X className="h-5 w-5" /></button>
         </div>
         <div className="p-5">{children}</div>
       </section>
-    </div>
+    </div>,
+    document.body,
   )
 }
 

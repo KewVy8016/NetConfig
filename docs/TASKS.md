@@ -64,6 +64,7 @@ plaintext secret; connection ไม่ค้างและ lock ถูกปล
 - [x] เพิ่ม Admin State toggle ต่อท้ายแต่ละ interface row; toggle สร้าง preview `shutdown/no shutdown` และ Apply ยืนยันก่อนส่ง — `backend/routers/config.py`, `frontend/src/pages/NodeDetailPage.tsx`
 - [x] ปรับ Node Detail ตาม device role: Switch ซ่อน Routing; Configure Interface อยู่หน้าเดิม และ Loopback/L2/L3/VLAN-SVI เปิดด้วย dialog — `frontend/src/pages/NodeDetailPage.tsx`, `Design/DESIGN.md`, `Design/node-detail.html`
 - [x] ปิด Command Preview popup อัตโนมัติหลัง Apply สำเร็จ โดยแสดงผลต่อคำสั่งชั่วครู่และคง popup ไว้เมื่อ failed/partial — `frontend/src/pages/NodeDetailPage.tsx`, `Design/DESIGN.md`
+- [x] ย้าย Form popup ของ Loopback/L2/L3/VLAN-SVI ไป render ที่ page root และยึดกลาง viewport พร้อม internal scroll สำหรับจอเตี้ย — `frontend/src/pages/NodeDetailPage.tsx`, `Design/DESIGN.md`, `Design/node-detail.html`
 - [x] สร้าง confirmation ก่อน shutdown และ action ที่ destructive ทุกตัว — confirmation ก่อน Apply คำสั่ง `shutdown`
 - [x] สร้าง Show allowlist: `show ip route`, `show ip interface brief`, `show ip protocols`,
   `show ip ospf neighbor`, `show ip eigrp neighbors`, `show ip bgp summary`, `show running-config`
