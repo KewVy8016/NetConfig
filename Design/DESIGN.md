@@ -233,8 +233,8 @@ Badge always includes `.badge-dot` (colored dot) + text label.
 
 **3-Step Flow:**
 
-1. **Device Info** — Scan network or enter IP manually
-2. **Protocol** — Select SSH, Telnet, or Serial
+1. **Device Info** — Enter device alias and type
+2. **Protocol** — Select SSH, Telnet, or Serial; SSH/Telnet can open Scan Network
 3. **Test & Save** — Test Ping → Port → Login → Read Hostname first; enable Save Node only when all required checks pass
 
 **Features:**
@@ -245,6 +245,8 @@ Badge always includes `.badge-dot` (colored dot) + text label.
 - Node is never persisted when the pre-save connection test fails; show the failure and offer Retry/Back
 - Telnet username is optional because IOS VTY may be configured for password-only login; SSH still requires username/password
 - Serial console username and password are optional because a local console may open directly at the IOS prompt
+- **Scan Network** appears only for SSH/Telnet and opens a standard centered dialog. It accepts a valid IPv4 subnet up to `/28`, probes only TCP 22/23 without login, and shows an error, empty, loading, or result state.
+- Choosing **Use SSH** or **Use Telnet** fills the Protocol form host/port, selects the matching transport, and closes the dialog. Close, backdrop, and Escape dismiss it without changing the form; serial has no network scan.
 
 ### 3. Node Detail (`node-detail.html`)
 
@@ -329,9 +331,17 @@ stays open so the user can read the error and take recovery action.
 
 **Table:**
 - Columns: Time, Node, Command Type, Status
-- Expandable rows: full command + result
-- Filter by Node and Status
-- Sorted newest first
+- Expandable rows: full command and per-command result first; correlation/operation ID is under a secondary disclosure. Details button supports keyboard
+- Filter by Node hostname, Status (success, failed, partial failed), and an optional local start/end date-time (minute precision); options remain available after filtering. Reject an end before the start and count/paginate only rows in the range
+- Node options come from the current Node list, including Nodes with no history. Keep deleted Nodes with history as labelled legacy options. Show the current hostname in History rows, falling back to the audit snapshot when the Node no longer exists
+- Compact labelled Node/Status/start/end filters in one toolbar at desktop width, wrapping on tablet; clear filters and refresh actions
+- Center the desktop content at a maximum width of 896px and use fixed table column widths so sparse rows do not stretch apart
+- Show Thai action label with English command type as secondary text; date and time on separate lines for scanning
+- At tablet width, show one expandable audit card per operation instead of squeezing the six-column table
+- Sorted newest first, 10 rows per page with previous/next controls and total count
+- Pagination controls are bordered and grouped separately from the count; previous/next icons sit inline with their labels, disabled states are visible. Center the Details header and each Details button on the same column axis
+- Include explicit Show commands in audit; loading/error/empty states and copy feedback are visible
+- Audit is append-only: replace mock Clear History button with non-destructive notice
 
 ---
 

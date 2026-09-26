@@ -299,12 +299,24 @@ export interface ShowResponse {
 export interface HistoryEntry {
   id: string
   node_id: string
-  operation_id?: string
+  node_hostname: string | null
+  correlation_id: string
+  operation_id: string | null
   command_type: string
   commands: string[]
   results: CommandResult[]
   overall_status: 'success' | 'failed' | 'partial_failed'
   created_at: string
+}
+
+export interface HistoryNodeOption {
+  id: string
+  hostname: string | null
+}
+
+export interface HistoryPageResult {
+  items: HistoryEntry[]
+  total: number
 }
 
 // ---------------------------------------------------------------------------
@@ -796,12 +808,24 @@ export async function getInterfaceCurrent(id: string, interfaceName: string): Pr
   }
 }
 
-/** ดึง command history แบบ filter ได้ */
-export async function listHistory(nodeId?: string, overallStatus?: string): Promise<HistoryEntry[]> {
+/** ดึง command history แบบ filter และแบ่งหน้า พร้อมยอดรวม */
+export async function listHistory(nodeId?: string, overallStatus?: string, limit = 25, offset = 0, createdFrom?: string, createdBefore?: string): Promise<HistoryPageResult> {
   try {
-    const { data } = await api.get<HistoryEntry[]>('/history', {
-      params: { node_id: nodeId || undefined, overall_status: overallStatus || undefined },
+    const { data, headers } = await api.get<HistoryEntry[]>('/history', {
+      params: { node_id: nodeId || undefined, overall_status: overallStatus || undefined, created_from: createdFrom, created_before: createdBefore, limit, offset },
     })
+    if (!Array.isArray(data)) throw new Error('History API returned an invalid response')
+    return { items: data, total: Number(headers['x-total-count'] ?? data.length) }
+  } catch (error) {
+    throw extractApiError(error as AxiosError)
+  }
+}
+
+/** ตัวเลือก Node ต้องไม่ขึ้นกับ filter และ page ของประวัติ */
+export async function listHistoryNodes(): Promise<HistoryNodeOption[]> {
+  try {
+    const { data } = await api.get<HistoryNodeOption[]>('/history/nodes')
+    if (!Array.isArray(data)) throw new Error('History nodes API returned an invalid response')
     return data
   } catch (error) {
     throw extractApiError(error as AxiosError)

@@ -55,7 +55,7 @@
     .topbar-left { display: flex; align-items: center; gap: 12px; }
     .topbar-title { font-size: var(--fs-lg); font-weight: 600; }
     .topbar-breadcrumb { font-size: var(--fs-sm); color: var(--muted); }
-    .content { flex: 1; padding: 24px 28px; }
+    .content { flex: 1; width: 100%; max-width: 896px; margin: 0 auto; padding: 24px 28px; }
 
     .btn { display: inline-flex; align-items: center; gap: 7px; padding: 8px 16px; border-radius: var(--radius); font-size: var(--fs-base); font-weight: 500; transition: all 0.12s; }
     .btn svg { width: 16px; height: 16px; }
@@ -82,7 +82,11 @@
     select.input { appearance: none; background-image: url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 32px; }
 
     .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
-    .ds-table { width: 100%; font-size: var(--fs-base); }
+    .tablet-history-list { display: none; }
+    .tablet-history-card { width: 100%; padding: 16px; text-align: left; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); margin-bottom: 12px; }
+    .tablet-history-card strong { display: block; margin: 4px 0 10px; }
+    .tablet-history-detail { padding: 16px; margin: -12px 0 12px; background: var(--surface); border: 1px solid var(--border); border-top: 0; border-radius: 0 0 var(--radius-lg) var(--radius-lg); }
+    .ds-table { width: 100%; table-layout: fixed; font-size: var(--fs-base); }
     .ds-table th { text-align: left; padding: 10px 16px; font-size: var(--fs-xs); font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; background: var(--bg); border-bottom: 1px solid var(--border); }
     .ds-table td { padding: 12px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
     .ds-table tbody tr:last-child td { border-bottom: none; }
@@ -162,6 +166,7 @@
     .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 19; }
 
     @media (max-width: 1024px) {
+      .history-filters { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
       .sidebar { transform: translateX(-100%); width: 240px; }
       .sidebar.open { transform: translateX(0); }
       .sidebar.collapsed { width: 240px; }
@@ -197,7 +202,10 @@
       .main { margin-left: 0 !important; }
       .sidebar.open ~ .sidebar-overlay { display: block; }
       .expand-content { grid-template-columns: 1fr; }
+      .table-wrap { display: none; }
+      .tablet-history-list { display: block; }
     }
+    @media (max-width: 600px) { .history-filters { grid-template-columns: 1fr !important; } }
 
     .toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 50; display: flex; flex-direction: column; gap: 8px; }
     .toast { background: var(--sidebar-bg); color: #fff; padding: 12px 16px; border-radius: var(--radius); font-size: var(--fs-sm); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.08); display: flex; align-items: center; gap: 10px; min-width: 280px; animation: slideIn 0.2s ease; }
@@ -240,27 +248,25 @@
 
       <div class="content">
         <!-- Filters -->
-        <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;">
-          <select class="input" style="width: auto; min-width: 140px;" id="filter-node">
-            <option value="all">All Nodes</option>
-            <option value="R1">R1</option>
-            <option value="R2">R2</option>
-            <option value="SW1">SW1</option>
-          </select>
-          <select class="input" style="width: auto; min-width: 140px;" id="filter-status">
-            <option value="all">All Status</option>
-            <option value="success">Success</option>
-            <option value="error">Error</option>
-          </select>
-          <div style="flex: 1;"></div>
-          <button class="btn btn-ghost btn-sm" onclick="clearHistory()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-            Clear History
-          </button>
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; font-size: var(--fs-sm); color: var(--muted);">
+          <span>ตรวจสอบคำสั่งที่ส่งไปยังอุปกรณ์และผลลัพธ์ย้อนหลัง</span><strong style="color: var(--fg);">ทั้งหมด 42 รายการ</strong>
         </div>
+        <div class="history-filters" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; padding: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);">
+          <label style="display: grid; gap: 4px; font-size: var(--fs-xs); color: var(--muted);">Node
+            <select class="input" style="width: 100%;" id="filter-node"><option value="all">ทุก Node</option><option value="SW1">SW1</option><option value="R3">R3</option><option value="R2">R2</option><option value="R1">R1 (ลบแล้ว)</option></select>
+          </label>
+          <label style="display: grid; gap: 4px; font-size: var(--fs-xs); color: var(--muted);">สถานะ
+            <select class="input" style="width: 100%;" id="filter-status"><option value="all">ทุกสถานะ</option><option value="success">สำเร็จ</option><option value="failed">ไม่สำเร็จ</option><option value="partial_failed">สำเร็จบางส่วน</option></select>
+          </label>
+          <label style="display: grid; gap: 4px; font-size: var(--fs-xs); color: var(--muted);">ตั้งแต่<input class="input" style="width: 100%; min-width: 0;" type="datetime-local" id="filter-from"></label>
+          <label style="display: grid; gap: 4px; font-size: var(--fs-xs); color: var(--muted);">ถึง<input class="input" style="width: 100%; min-width: 0;" type="datetime-local" id="filter-to"></label>
+          <div style="grid-column: 1 / -1; display: flex; justify-content: space-between;"><button class="btn btn-ghost btn-sm" onclick="resetFilters()">ล้างตัวกรอง</button><button class="btn btn-ghost btn-sm">รีเฟรช</button></div>
+        </div>
+        <p id="filter-error" role="alert" style="display: none; color: var(--red); margin: -8px 0 16px;">เวลาสิ้นสุดต้องไม่อยู่ก่อนเวลาเริ่มต้น</p>
 
         <div class="table-wrap">
           <table class="ds-table">
+            <colgroup><col style="width: 40px;"><col style="width: 144px;"><col style="width: 144px;"><col><col style="width: 112px;"><col style="width: 144px;"></colgroup>
             <thead>
               <tr>
                 <th style="width: 32px;"></th>
@@ -268,18 +274,18 @@
                 <th>Node</th>
                 <th>Command Type</th>
                 <th>Status</th>
-                <th style="text-align: right;">Details</th>
+                <th style="text-align: center;">Details</th>
               </tr>
             </thead>
             <tbody>
               <!-- Row 1 -->
-              <tr onclick="toggleExpand('row-1')" style="cursor: pointer;">
+              <tr data-time="2026-09-23T14:32" onclick="toggleExpand('row-1')" style="cursor: pointer;">
                 <td><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" id="chevron-row-1"><polyline points="6 9 12 15 18 9"/></svg></td>
                 <td class="mono" style="white-space: nowrap;">14:32:18</td>
                 <td><strong>R1</strong></td>
                 <td>OSPF Configuration</td>
                 <td><span class="badge badge-green"><span class="badge-dot"></span> Success</span></td>
-                <td style="text-align: right;"><button class="btn btn-ghost btn-sm">View</button></td>
+                <td style="text-align: center;"><button class="btn btn-ghost btn-sm">View</button></td>
               </tr>
               <tr class="expand-row" id="row-1">
                 <td colspan="6">
@@ -302,13 +308,13 @@ OSPF: Configured 2 network statements</div>
               </tr>
 
               <!-- Row 2 -->
-              <tr onclick="toggleExpand('row-2')" style="cursor: pointer;">
+              <tr data-time="2026-09-23T14:31" onclick="toggleExpand('row-2')" style="cursor: pointer;">
                 <td><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" id="chevron-row-2"><polyline points="6 9 12 15 18 9"/></svg></td>
                 <td class="mono" style="white-space: nowrap;">14:31:45</td>
                 <td><strong>R1</strong></td>
                 <td>Interface Configuration</td>
                 <td><span class="badge badge-green"><span class="badge-dot"></span> Success</span></td>
-                <td style="text-align: right;"><button class="btn btn-ghost btn-sm">View</button></td>
+                <td style="text-align: center;"><button class="btn btn-ghost btn-sm">View</button></td>
               </tr>
               <tr class="expand-row" id="row-2">
                 <td colspan="6">
@@ -329,13 +335,13 @@ Line protocol on Interface GigabitEthernet0/0, changed state to up</div>
               </tr>
 
               <!-- Row 3 -->
-              <tr onclick="toggleExpand('row-3')" style="cursor: pointer;">
+              <tr data-time="2026-09-23T14:30" onclick="toggleExpand('row-3')" style="cursor: pointer;">
                 <td><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" id="chevron-row-3"><polyline points="6 9 12 15 18 9"/></svg></td>
                 <td class="mono" style="white-space: nowrap;">14:30:22</td>
                 <td><strong>R2</strong></td>
                 <td>Static Route</td>
                 <td><span class="badge badge-green"><span class="badge-dot"></span> Success</span></td>
-                <td style="text-align: right;"><button class="btn btn-ghost btn-sm">View</button></td>
+                <td style="text-align: center;"><button class="btn btn-ghost btn-sm">View</button></td>
               </tr>
               <tr class="expand-row" id="row-3">
                 <td colspan="6">
@@ -353,13 +359,13 @@ Line protocol on Interface GigabitEthernet0/0, changed state to up</div>
               </tr>
 
               <!-- Row 4 -->
-              <tr onclick="toggleExpand('row-4')" style="cursor: pointer;">
+              <tr data-time="2026-09-23T14:28" onclick="toggleExpand('row-4')" style="cursor: pointer;">
                 <td><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" id="chevron-row-4"><polyline points="6 9 12 15 18 9"/></svg></td>
                 <td class="mono" style="white-space: nowrap;">14:28:09</td>
                 <td><strong>SW1</strong></td>
                 <td>Interface Configuration</td>
                 <td><span class="badge badge-red"><span class="badge-dot"></span> Error</span></td>
-                <td style="text-align: right;"><button class="btn btn-ghost btn-sm">View</button></td>
+                <td style="text-align: center;"><button class="btn btn-ghost btn-sm">View</button></td>
               </tr>
               <tr class="expand-row" id="row-4">
                 <td colspan="6">
@@ -380,13 +386,13 @@ no shutdown</div>
               </tr>
 
               <!-- Row 5 -->
-              <tr onclick="toggleExpand('row-5')" style="cursor: pointer;">
+              <tr data-time="2026-09-23T14:25" onclick="toggleExpand('row-5')" style="cursor: pointer;">
                 <td><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" id="chevron-row-5"><polyline points="6 9 12 15 18 9"/></svg></td>
                 <td class="mono" style="white-space: nowrap;">14:25:33</td>
                 <td><strong>R1</strong></td>
                 <td>Show Command</td>
                 <td><span class="badge badge-green"><span class="badge-dot"></span> Success</span></td>
-                <td style="text-align: right;"><button class="btn btn-ghost btn-sm">View</button></td>
+                <td style="text-align: center;"><button class="btn btn-ghost btn-sm">View</button></td>
               </tr>
               <tr class="expand-row" id="row-5">
                 <td colspan="6">
@@ -410,13 +416,13 @@ L        10.0.12.1/32 is directly connected, Gi0/1</div>
               </tr>
 
               <!-- Row 6 -->
-              <tr onclick="toggleExpand('row-6')" style="cursor: pointer;">
+              <tr data-time="2026-09-23T14:22" onclick="toggleExpand('row-6')" style="cursor: pointer;">
                 <td><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" id="chevron-row-6"><polyline points="6 9 12 15 18 9"/></svg></td>
                 <td class="mono" style="white-space: nowrap;">14:22:11</td>
                 <td><strong>R1</strong></td>
                 <td>Write Memory</td>
                 <td><span class="badge badge-green"><span class="badge-dot"></span> Success</span></td>
-                <td style="text-align: right;"><button class="btn btn-ghost btn-sm">View</button></td>
+                <td style="text-align: center;"><button class="btn btn-ghost btn-sm">View</button></td>
               </tr>
               <tr class="expand-row" id="row-6">
                 <td colspan="6">
@@ -435,6 +441,20 @@ L        10.0.12.1/32 is directly connected, Gi0/1</div>
               </tr>
             </tbody>
           </table>
+        </div>
+        <div class="tablet-history-list" aria-label="History at tablet width">
+          <button class="tablet-history-card" type="button" data-node="R1" data-status="success" data-time="2026-09-23T14:32" aria-expanded="false" onclick="toggleTablet(this)">
+            <small>23 ก.ย. 69 · 14:32:18</small><strong>R1 · ตั้งค่า OSPF</strong><span class="badge badge-green"><span class="badge-dot"></span> สำเร็จ</span>
+          </button>
+          <div class="tablet-history-detail" hidden><div class="expand-block success">router ospf 1<br>network 10.0.12.0 0.0.0.255 area 0</div><details><summary>ข้อมูลอ้างอิง</summary>Correlation ID: example</details></div>
+          <button class="tablet-history-card" type="button" data-node="SW1" data-status="failed" data-time="2026-09-23T14:28" aria-expanded="false" onclick="toggleTablet(this)">
+            <small>23 ก.ย. 69 · 14:28:09</small><strong>SW1 · ตั้งค่า Interface</strong><span class="badge badge-red"><span class="badge-dot"></span> ไม่สำเร็จ</span>
+          </button>
+          <div class="tablet-history-detail" hidden><div class="expand-block error">% Invalid input detected</div><details><summary>ข้อมูลอ้างอิง</summary>Correlation ID: example</details></div>
+        </div>
+        <div style="display: flex; justify-content: space-between; gap: 12px; align-items: center; margin-top: 16px; font-size: var(--fs-sm); color: var(--muted);">
+          <span>หน้า 1 จาก 5 · 1–10 จาก 42 รายการ</span>
+          <div style="display: flex; gap: 8px;"><button class="btn btn-secondary btn-sm" disabled>‹ ก่อนหน้า</button><button class="btn btn-secondary btn-sm">ถัดไป ›</button></div>
         </div>
       </div>
     </div>
@@ -479,18 +499,6 @@ L        10.0.12.1/32 is directly connected, Gi0/1</div>
       }
     }
 
-    function clearHistory() {
-      if (confirm('Clear all command history? This cannot be undone.')) {
-        document.querySelector('.ds-table tbody').innerHTML = `
-          <tr><td colspan="6" style="text-align: center; padding: 48px; color: var(--muted);">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin: 0 auto 12px; display: block; opacity: 0.4;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            No command history yet.
-          </td></tr>
-        `;
-        showToast('History cleared');
-      }
-    }
-
     function showToast(msg) {
       const container = document.getElementById('toast-container');
       const toast = document.createElement('div');
@@ -503,19 +511,47 @@ L        10.0.12.1/32 is directly connected, Gi0/1</div>
     // Filter
     document.getElementById('filter-node').addEventListener('change', filterTable);
     document.getElementById('filter-status').addEventListener('change', filterTable);
+    document.getElementById('filter-from').addEventListener('change', filterTable);
+    document.getElementById('filter-to').addEventListener('change', filterTable);
 
     function filterTable() {
       const node = document.getElementById('filter-node').value;
       const status = document.getElementById('filter-status').value;
+      const from = document.getElementById('filter-from').value;
+      const to = document.getElementById('filter-to').value;
+      const invalidRange = !!(from && to && from > to);
+      document.getElementById('filter-error').style.display = invalidRange ? 'block' : 'none';
       const rows = document.querySelectorAll('.ds-table tbody tr:not(.expand-row)');
 
       rows.forEach(row => {
         const rowNode = row.querySelector('strong')?.textContent || '';
-        const rowStatus = row.querySelector('.badge')?.classList.contains('badge-green') ? 'success' : 'error';
+        const badge = row.querySelector('.badge');
+        const rowStatus = badge?.classList.contains('badge-green') ? 'success' : badge?.classList.contains('badge-amber') ? 'partial_failed' : 'failed';
         const matchNode = node === 'all' || rowNode === node;
         const matchStatus = status === 'all' || rowStatus === status;
-        row.style.display = matchNode && matchStatus ? '' : 'none';
+        const matchTime = (!from || row.dataset.time >= from) && (!to || row.dataset.time <= to);
+        row.style.display = !invalidRange && matchNode && matchStatus && matchTime ? '' : 'none';
       });
+      document.querySelectorAll('.tablet-history-card').forEach(card => {
+        const visible = !invalidRange && (node === 'all' || card.dataset.node === node) && (status === 'all' || card.dataset.status === status)
+          && (!from || card.dataset.time >= from) && (!to || card.dataset.time <= to);
+        card.style.display = visible ? '' : 'none';
+        card.nextElementSibling.hidden = !visible || card.getAttribute('aria-expanded') !== 'true';
+      });
+    }
+
+    function resetFilters() {
+      document.getElementById('filter-node').value = 'all';
+      document.getElementById('filter-status').value = 'all';
+      document.getElementById('filter-from').value = '';
+      document.getElementById('filter-to').value = '';
+      filterTable();
+    }
+
+    function toggleTablet(button) {
+      const isOpen = button.getAttribute('aria-expanded') === 'true';
+      button.setAttribute('aria-expanded', String(!isOpen));
+      button.nextElementSibling.hidden = isOpen;
     }
   </script>
 </body>

@@ -47,6 +47,7 @@ CREATE TABLE IF NOT EXISTS command_history (
     id              TEXT PRIMARY KEY,
     correlation_id  TEXT NOT NULL,
     node_id         TEXT NOT NULL,
+    node_hostname   TEXT,
     operation_id    TEXT,
     command_type    TEXT NOT NULL,
     commands_json   TEXT NOT NULL,
@@ -72,6 +73,17 @@ def init_db() -> None:
         columns = {row[1] for row in conn.execute("PRAGMA table_info(nodes)").fetchall()}
         if "status" not in columns:
             conn.execute("ALTER TABLE nodes ADD COLUMN status TEXT NOT NULL DEFAULT 'unknown'")
+        history_columns = {row[1] for row in conn.execute("PRAGMA table_info(command_history)").fetchall()}
+        if "node_hostname" not in history_columns:
+            conn.execute("ALTER TABLE command_history ADD COLUMN node_hostname TEXT")
+        conn.execute(
+            """UPDATE command_history SET node_hostname =
+               (SELECT hostname FROM nodes WHERE nodes.id = command_history.node_id)
+               WHERE node_hostname IS NULL AND EXISTS
+               (SELECT 1 FROM nodes WHERE nodes.id = command_history.node_id)"""
+        )
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_history_newest ON command_history(created_at DESC, id DESC)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_history_node_status ON command_history(node_id, overall_status, created_at DESC)")
         conn.commit()
 
 

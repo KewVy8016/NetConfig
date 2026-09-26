@@ -130,9 +130,13 @@ plaintext secret; connection ไม่ค้างและ lock ถูกปล
 ## Phase 4 — Scanner, UX และส่งมอบ
 
 - [x] Implement subnet scanner: จำกัด subnet size, rate, concurrency; probe เฉพาะ TCP 22/23 — `backend/services/scanner.py`, `/nodes/scan`
-- [x] เพิ่ม scan results และ manual IP fallback ใน Add Node flow — `frontend/src/pages/AddNodePage.tsx`
+- [x] ย้าย Network Scanner เป็น centered dialog ใน Add Node, แสดง result/loading/error/empty และคง manual IP fallback — `frontend/src/pages/AddNodePage.tsx`, `Design/DESIGN.md`, `Design/add-node.html`
 - [x] Implement Nodes dashboard search/filter/card/table/status refresh ตาม Design — `frontend/src/pages/NodesPage.tsx`; search, card/table และ 30-second status refresh
 - [x] Implement explicit Save Config (`write memory`) พร้อม confirmation, result และ history — `backend/routers/config.py`, `frontend/src/pages/NodeDetailPage.tsx`, `backend/tests/test_phase4.py`
+- [x] เติม History: audit Show success/failure, ชื่อ Node แม้ลบ Node แล้ว, filter ที่คงตัว, pagination/total, correlation ID และ per-command detail; ปุ่ม Clear ไม่ลบ audit — `backend/routers/config.py`, `frontend/src/pages/HistoryPage.tsx`, `Design/history.html`, `backend/tests/test_history.py`; pytest 18 tests, Ruff และ TypeScript ผ่าน 2026-09-26
+- [x] ปรับ UX History: toolbar ตัวกรองกระชับ, label ไทย, 10 รายการต่อหน้า, รายละเอียดเน้น CLI/result และใช้การ์ดบน tablet — `frontend/src/pages/HistoryPage.tsx`, `Design/DESIGN.md`, `Design/history.html`; ตรวจ browser ที่ desktop 1539px และ tablet 820px, กรอง/ล้างตัวกรอง/แบ่งหน้า/ขยายด้วย Enter ผ่าน 2026-09-26
+- [x] ให้ History ใช้ชื่อ Node ปัจจุบันและมีตัวเลือกทุก Node แม้ยังไม่มีประวัติ; คงชื่อ snapshot ของ Node ที่ลบแล้ว และจัดตาราง desktop ให้กระชับ — `frontend/src/pages/HistoryPage.tsx`, `Design/DESIGN.md`, `Design/history.html`; ตรวจ browser กับ SW1/R2/R3 2026-09-26
+- [x] เพิ่มตัวกรองช่วงวันเวลาใน History แบบ server-side ก่อน pagination, ปรับปุ่มก่อนหน้า/ถัดไป และจัดหัว/ปุ่มรายละเอียดให้ตรงแนว — `backend/routers/config.py`, `frontend/src/lib/api.ts`, `frontend/src/pages/HistoryPage.tsx`, `Design/history.html`; ทดสอบ API และหน้าเว็บ 2026-09-26
 - [x] ตัดสิน OD-004 เรื่อง terminal; ถ้าเปิด ต้อง admin-only, warning, audit และ no secret logging — ปิด raw terminal ตาม ADR-023; คง typed configuration workflow เท่านั้น
 - [x] ทำ Design QA ทุกหน้า: 1280px+, tablet, loading/success/error/empty และ keyboard — 2026-09-22: ตรวจ Dashboard/Add Node ใน browser ที่ 1280px และ tablet 768px; scanner/manual fallback แสดงครบ, Dashboard/Add Node/History/Node Detail มี loading/error/empty state จาก code path, status ใช้ icon+color+text; Preview drawer มี Tab-accessible buttons, Enter submit form และ Escape ปิด drawerโดยไม่ Apply
 - [x] ทำ end-to-end demo script และ update README/device bootstrap/troubleshooting — `docs/DEMO.md`, `README.md`

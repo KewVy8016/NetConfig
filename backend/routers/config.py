@@ -8,7 +8,7 @@ import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Literal, NoReturn
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Query, Response, status
 from pydantic import BaseModel
 from starlette.concurrency import run_in_threadpool
 
@@ -31,6 +31,7 @@ from backend.models import (
     EigrpStateResponse,
     ErrorResponse,
     HistoryEntry,
+    HistoryNodeOption,
     InterfaceAdminConfig,
     InterfaceCapabilitiesResponse,
     InterfaceConfig,
@@ -95,8 +96,8 @@ from backend.services.renderer import (
     render_eigrp_network_remove,
     render_eigrp_network_update,
     render_eigrp_process_remove,
-    render_interface_commands,
     render_interface_admin_commands,
+    render_interface_commands,
     render_interface_remove,
     render_loopback_commands,
     render_loopback_remove,
@@ -578,19 +579,21 @@ def _record_apply_result(
 ) -> None:
     """ปิด operation และเพิ่ม immutable command history สำหรับ config mutation"""
     result_json = json.dumps([item.model_dump() for item in results], ensure_ascii=False)
-    error_code = None if overall_status == "success" else results[0].error_code or "CONFIG_APPLY_FAILED"
+    failed_result = next((item for item in results if item.status == "failed"), None)
+    error_code = None if failed_result is None else failed_result.error_code or "CONFIG_APPLY_FAILED"
     with get_db() as conn:
+        node_hostname = conn.execute("SELECT hostname FROM nodes WHERE id = ?", (node_id,)).fetchone()[0]
         conn.execute(
             "UPDATE operations SET status = ?, result_json = ?, error_code = ? WHERE id = ?",
             (overall_status, result_json, error_code, request.operation_id),
         )
         conn.execute(
             """INSERT INTO command_history
-               (id, correlation_id, node_id, operation_id, command_type, commands_json,
+               (id, correlation_id, node_id, node_hostname, operation_id, command_type, commands_json,
                 result_json, overall_status, created_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
-                str(uuid.uuid4()), correlation_id, node_id, request.operation_id,
+                str(uuid.uuid4()), correlation_id, node_id, node_hostname, request.operation_id,
                 command_type, json.dumps(commands, ensure_ascii=False),
                 result_json, overall_status, _now().isoformat(),
             ),
@@ -1340,10 +1343,28 @@ async def show_command(
                 require_enable=command == "show running-config",
             )
         except Exception as exc:
+            _record_show_result(node_id, command, correlation_id, "failed", redact_text(str(exc)))
             _error("SHOW_FAILED", "อ่านข้อมูลจากอุปกรณ์ไม่สำเร็จ", correlation_id, status.HTTP_502_BAD_GATEWAY, {"reason": redact_text(str(exc))})
+    _record_show_result(node_id, command, correlation_id, "success", output)
     parser_kind = _SHOW_COMMANDS[command]
     parsed = parse_show_ip_interface_brief(output) if parser_kind == "interface" else parse_show_ip_route(output) if parser_kind == "route" else None
     return ShowResponse(node_id=node_id, command=command, output=output, parsed=parsed, collected_at=_now().isoformat())
+
+
+def _record_show_result(node_id: str, command: str, correlation_id: str, result_status: Literal["success", "failed"], output: str) -> None:
+    """เพิ่ม audit สำหรับ Show ที่ผู้ใช้เรียกโดยตรง โดยซ่อน secret ในผลลัพธ์"""
+    safe_output = redact_text(output)
+    result = CommandResult(command=command, status=result_status, output=safe_output, error_code="SHOW_FAILED" if result_status == "failed" else None)
+    with get_db() as conn:
+        node_hostname = conn.execute("SELECT hostname FROM nodes WHERE id = ?", (node_id,)).fetchone()[0]
+        conn.execute(
+            """INSERT INTO command_history
+               (id, correlation_id, node_id, node_hostname, operation_id, command_type, commands_json,
+                result_json, overall_status, created_at)
+               VALUES (?, ?, ?, ?, NULL, ?, ?, ?, ?, ?)""",
+            (str(uuid.uuid4()), correlation_id, node_id, node_hostname, "Show Command", json.dumps([command]),
+             json.dumps([result.model_dump()], ensure_ascii=False), result_status, _now().isoformat()),
+        )
 
 
 @router.get(
@@ -1487,27 +1508,61 @@ async def list_vlans(node_id: str) -> VlanListResponse:
     return VlanListResponse(node_id=node_id, vlans=vlans, collected_at=_now().isoformat())
 
 
+@router.get("/history/nodes", response_model=list[HistoryNodeOption])
+async def list_history_nodes() -> list[HistoryNodeOption]:
+    """คืนรายการ Node ที่มี history โดยไม่ขึ้นกับตัวกรองหรือหน้าปัจจุบัน"""
+    with get_db() as conn:
+        rows = conn.execute(
+            """SELECT h.node_id, COALESCE(h.node_hostname, n.hostname) AS hostname FROM command_history h
+               LEFT JOIN nodes n ON n.id = h.node_id
+               GROUP BY h.node_id ORDER BY COALESCE(h.node_hostname, n.hostname, h.node_id) COLLATE NOCASE"""
+        ).fetchall()
+    return [HistoryNodeOption(id=row["node_id"], hostname=row["hostname"]) for row in rows]
+
+
 @router.get("/history", response_model=list[HistoryEntry])
 async def list_history(
+    response: Response,
     node_id: str | None = Query(default=None),
-    overall_status: str | None = Query(default=None),
+    overall_status: Literal["success", "failed", "partial_failed"] | None = Query(default=None),
+    created_from: datetime | None = None,
+    created_before: datetime | None = None,
+    limit: int = Query(default=25, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
 ) -> list[HistoryEntry]:
-    """คืน command history แบบ filter ได้ โดยไม่เผย credential"""
-    query = "SELECT * FROM command_history WHERE 1=1"
+    """คืน audit newest-first พร้อมตัวกรอง UTC ช่วง [created_from, created_before) และยอดรวม"""
+    if any(value is not None and value.utcoffset() is None for value in (created_from, created_before)):
+        raise HTTPException(status_code=422, detail="กรุณาระบุเขตเวลาในช่วงที่กรอง")
+    if created_from and created_before and created_from >= created_before:
+        raise HTTPException(status_code=422, detail="เวลาสิ้นสุดต้องอยู่หลังเวลาเริ่มต้น")
+    where = " WHERE 1=1"
     params: list[str] = []
     if node_id:
-        query += " AND node_id = ?"
+        where += " AND h.node_id = ?"
         params.append(node_id)
     if overall_status:
-        query += " AND overall_status = ?"
+        where += " AND h.overall_status = ?"
         params.append(overall_status)
-    query += " ORDER BY created_at DESC"
+    if created_from:
+        where += " AND h.created_at >= ?"
+        params.append(created_from.astimezone(UTC).isoformat())
+    if created_before:
+        where += " AND h.created_at < ?"
+        params.append(created_before.astimezone(UTC).isoformat())
     with get_db() as conn:
-        rows = conn.execute(query, params).fetchall()
+        total = conn.execute("SELECT COUNT(*) FROM command_history h" + where, params).fetchone()[0]
+        rows = conn.execute(
+            """SELECT h.*, COALESCE(h.node_hostname, n.hostname) AS display_hostname FROM command_history h
+               LEFT JOIN nodes n ON n.id = h.node_id""" + where +
+            " ORDER BY h.created_at DESC, h.id DESC LIMIT ? OFFSET ?", [*params, limit, offset],
+        ).fetchall()
+    response.headers["X-Total-Count"] = str(total)
     return [
         HistoryEntry(
             id=row["id"],
             node_id=row["node_id"],
+            node_hostname=row["display_hostname"],
+            correlation_id=row["correlation_id"],
             operation_id=row["operation_id"],
             command_type=row["command_type"],
             commands=json.loads(row["commands_json"]),

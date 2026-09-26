@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, CheckCircle2, ChevronRight, Loader2, Save, Server, ShieldAlert, XCircle } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm as useRHForm } from 'react-hook-form'
 import { Link } from 'react-router-dom'
 import { z } from 'zod'
@@ -54,6 +54,7 @@ export function AddNodePage({ collapsed, setCollapsed }: { collapsed: boolean; s
   const [testOverall, setTestOverall] = useState<'pending' | 'success' | 'failed' | 'skipped'>('pending')
   const [hostnameDetected, setHostnameDetected] = useState<string | null>(null)
   const [scanSubnetValue, setScanSubnetValue] = useState('192.168.8.128/28')
+  const [isScanDialogOpen, setIsScanDialogOpen] = useState(false)
   
   const queryClient = useQueryClient()
 
@@ -81,7 +82,19 @@ export function AddNodePage({ collapsed, setCollapsed }: { collapsed: boolean; s
     form2.setValue('transport', port === 22 ? 'ssh' : 'telnet')
     form2.setValue('host', result.host)
     form2.setValue('port', port)
+    setIsScanDialogOpen(false)
   }
+
+  // ปิดหน้าต่าง Scan โดยไม่กระทบข้อมูล Protocol ที่กรอกไว้
+  useEffect(() => {
+    if (!isScanDialogOpen) return
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsScanDialogOpen(false)
+    }
+    window.addEventListener('keydown', closeOnEscape)
+    return () => window.removeEventListener('keydown', closeOnEscape)
+  }, [isScanDialogOpen])
 
   // --- Step 1 Form ---
   const form1 = useRHForm<Step1Data>({
@@ -199,13 +212,16 @@ export function AddNodePage({ collapsed, setCollapsed }: { collapsed: boolean; s
             <form onSubmit={form2.handleSubmit(onStep2Submit)} className="space-y-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold text-gray-900">Protocol Settings</h2>
-                <button
-                  type="button"
-                  onClick={() => setStep(1)}
-                  className="text-sm text-muted hover:text-gray-900 flex items-center gap-1"
-                >
-                  <ArrowLeft className="w-4 h-4" /> Back
-                </button>
+                <div className="flex items-center gap-2">
+                  {transportType !== 'serial' && (
+                    <button type="button" onClick={() => setIsScanDialogOpen(true)} className="btn-secondary btn-sm flex items-center gap-1.5">
+                      <Server className="w-4 h-4" /> Scan Network
+                    </button>
+                  )}
+                  <button type="button" onClick={() => setStep(1)} className="text-sm text-muted hover:text-gray-900 flex items-center gap-1">
+                    <ArrowLeft className="w-4 h-4" /> Back
+                  </button>
+                </div>
               </div>
 
               {/* Protocol selector */}
@@ -236,8 +252,6 @@ export function AddNodePage({ collapsed, setCollapsed }: { collapsed: boolean; s
                   <p><strong>Warning:</strong> Telnet sends credentials in plain text. Use SSH if possible.</p>
                 </div>
               )}
-
-              {transportType !== 'serial' && <section className="rounded-lg border border-gray-200 bg-gray-50 p-3 space-y-3" aria-label="ค้นหาอุปกรณ์ใน subnet"><div className="flex flex-wrap items-end gap-2"><div className="flex-1 min-w-[220px]"><label className="block text-xs font-medium text-gray-700 mb-1">Scan management subnet (สูงสุด /28)</label><input value={scanSubnetValue} onChange={(event) => setScanSubnetValue(event.target.value)} className="input-field font-mono" placeholder="192.168.8.128/28" /></div><button type="button" className="btn-secondary btn-sm" onClick={() => scanMutation.mutate(scanSubnetValue)} disabled={scanMutation.isPending}>{scanMutation.isPending ? 'กำลังค้นหา...' : 'Scan SSH/Telnet'}</button></div><p className="text-xs text-gray-500">ตรวจเฉพาะ TCP 22 และ 23, ไม่ login และยังกรอก IP เองได้เสมอ</p>{scanMutation.error && <p role="alert" className="text-sm text-red-700">{(scanMutation.error as { message_th?: string }).message_th ?? 'ค้นหาไม่สำเร็จ'}</p>}{scanMutation.data && <div className="space-y-1 text-sm">{scanMutation.data.results.length ? scanMutation.data.results.map((result) => <div key={result.host} className="flex flex-wrap items-center justify-between gap-2 rounded border border-gray-200 bg-white p-2"><code>{result.host}</code><span className="flex gap-1">{result.open_ports.map((port) => <button key={port} type="button" className="btn-ghost btn-sm" onClick={() => selectScanResult(result, port)}>Use {port === 22 ? 'SSH' : 'Telnet'}:{port}</button>)}</span></div>) : <p className="text-gray-500">ไม่พบ TCP 22/23 — ใช้ Manual IP ด้านล่างได้</p>}</div>}</section>}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {transportType !== 'serial' ? (
@@ -307,6 +321,38 @@ export function AddNodePage({ collapsed, setCollapsed }: { collapsed: boolean; s
             </form>
           )}
 
+          {isScanDialogOpen && (
+            <div className="dialog-overlay" onMouseDown={() => setIsScanDialogOpen(false)}>
+              <section role="dialog" aria-modal="true" aria-labelledby="scan-dialog-title" className="dialog-panel flex max-h-[calc(100dvh-2rem)] flex-col" onMouseDown={(event) => event.stopPropagation()}>
+                <div className="border-b border-gray-100 px-5 py-4">
+                  <h2 id="scan-dialog-title" className="text-lg font-semibold text-gray-900">ค้นหาอุปกรณ์ใน subnet</h2>
+                  <p className="mt-1 text-sm text-gray-500">ตรวจเฉพาะ SSH (TCP 22) และ Telnet (TCP 23) โดยไม่ login</p>
+                </div>
+                <div className="space-y-4 overflow-y-auto px-5 py-4">
+                  <div>
+                    <label htmlFor="scan-subnet" className="mb-1 block text-sm font-medium text-gray-700">Management subnet (สูงสุด /28)</label>
+                    <div className="flex gap-2">
+                      <input id="scan-subnet" value={scanSubnetValue} onChange={(event) => setScanSubnetValue(event.target.value)} className="input-field font-mono" placeholder="192.168.8.128/28" autoFocus />
+                      <button type="button" className="btn-primary whitespace-nowrap" onClick={() => scanMutation.mutate(scanSubnetValue)} disabled={scanMutation.isPending}>{scanMutation.isPending ? 'กำลังค้นหา...' : 'Scan'}</button>
+                    </div>
+                  </div>
+                  {scanMutation.isPending && <p className="flex items-center gap-2 text-sm text-blue-700"><Loader2 className="h-4 w-4 animate-spin" /> กำลังตรวจหา TCP 22/23...</p>}
+                  {scanMutation.error && <p role="alert" className="flex items-center gap-2 text-sm text-red-700"><XCircle className="h-4 w-4" />{(scanMutation.error as { message_th?: string }).message_th ?? 'ค้นหาไม่สำเร็จ'}</p>}
+                  {scanMutation.data && (
+                    <div className="space-y-2 text-sm" aria-live="polite">
+                      {scanMutation.data.results.length ? scanMutation.data.results.map((result) => (
+                        <div key={result.host} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-gray-200 bg-gray-50 p-2.5">
+                          <code className="font-medium text-gray-900">{result.host}</code>
+                          <span className="flex gap-1">{result.open_ports.map((port) => <button key={port} type="button" className="btn-ghost btn-sm" onClick={() => selectScanResult(result, port)}>Use {port === 22 ? 'SSH' : 'Telnet'}:{port}</button>)}</span>
+                        </div>
+                      )) : <p className="text-gray-500">ไม่พบ TCP 22/23 — ปิดหน้าต่างและกรอก IP เองได้</p>}
+                    </div>
+                  )}
+                </div>
+                <div className="flex justify-end border-t border-gray-100 px-5 py-3"><button type="button" className="btn-secondary" onClick={() => setIsScanDialogOpen(false)}>ปิด</button></div>
+              </section>
+            </div>
+          )}
           {/* STEP 3 */}
           {step === 3 && (
             <div className="space-y-6">

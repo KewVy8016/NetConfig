@@ -44,7 +44,8 @@ NetConfig คือ Web UI สำหรับตั้งค่า Cisco IOS IPv
 เปิด 2 Terminal เพื่อรันแยกกัน
 
 บน Windows สามารถดับเบิลคลิก [`run-netconfig.bat`](run-netconfig.bat) เพื่อเปิด Backend,
-Frontend และ Browser พร้อมกันได้ในครั้งเดียว
+Frontend และ Browser พร้อมกันได้ในครั้งเดียว; หาก Backend/Frontend รันอยู่แล้ว สคริปต์จะใช้
+process เดิม ไม่เปิดซ้ำจนพอร์ตชนกัน
 
 **1. Backend**:
 ```bash

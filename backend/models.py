@@ -1039,9 +1039,18 @@ class HistoryEntry(BaseModel):
 
     id: str
     node_id: str
+    node_hostname: str | None = None
+    correlation_id: str
     operation_id: str | None
     command_type: str
     commands: list[str]
     results: list[CommandResult]
     overall_status: str
     created_at: str
+
+
+class HistoryNodeOption(BaseModel):
+    """Node ที่มี audit history รวมถึง Node ที่ถูกลบไปแล้ว"""
+
+    id: str
+    hostname: str | None = None
