@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 from backend.tests.conftest import SERIAL_NODE_PAYLOAD, SSH_NODE_PAYLOAD, TELNET_NODE_PAYLOAD
 
 
@@ -283,3 +285,40 @@ class TestTestNodeConnection:
         """Test node ที่ไม่มีต้องได้ 404"""
         resp = client.post("/nodes/nonexistent-id/test")
         assert resp.status_code == 404
+
+
+class TestSerialPortDiscovery:
+    """ตรวจ endpoint อ่านพอร์ต USB console โดยไม่ต้องเสียบอุปกรณ์จริง"""
+
+    def test_lists_current_ports_usb_first(self, client, monkeypatch):
+        """คืนชื่อพอร์ตและคำอธิบาย โดยเรียง USB ก่อนและ COM ตามตัวเลข"""
+        from backend.services import serial_ports
+
+        ports = [
+            SimpleNamespace(device="COM2", description="Communications Port", hwid="ACPI", vid=None),
+            SimpleNamespace(device="COM10", description="USB Serial Port", hwid="USB VID:PID", vid=1027),
+            SimpleNamespace(device="COM3", description="USB Console Cable", hwid="USB VID:PID", vid=4292),
+        ]
+        monkeypatch.setattr(serial_ports.list_ports, "comports", lambda: ports)
+
+        response = client.get("/nodes/serial-ports")
+        assert response.status_code == 200
+        assert response.json() == {"ports": [
+            {"port": "COM3", "description": "USB Console Cable", "is_usb": True},
+            {"port": "COM10", "description": "USB Serial Port", "is_usb": True},
+            {"port": "COM2", "description": "Communications Port", "is_usb": False},
+        ]}
+
+    def test_scan_failure_has_safe_error(self, client, monkeypatch):
+        """ไดรเวอร์อ่านพอร์ตล้มเหลวต้องคืนข้อความไทยโดยไม่เผยรายละเอียดภายใน"""
+        from backend.services import serial_ports
+
+        def fail_scan():
+            """จำลองข้อผิดพลาดจากระบบปฏิบัติการ"""
+            raise OSError("private device path")
+
+        monkeypatch.setattr(serial_ports.list_ports, "comports", fail_scan)
+        response = client.get("/nodes/serial-ports")
+        assert response.status_code == 503
+        assert response.json()["detail"]["code"] == "SERIAL_PORT_SCAN_FAILED"
+        assert "private device path" not in response.text

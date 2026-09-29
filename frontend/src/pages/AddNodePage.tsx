@@ -1,12 +1,14 @@
+// หน้า Add Node สำหรับเลือกวิธีเชื่อมต่อ ทดสอบ และบันทึกอุปกรณ์ Cisco
+// รายการพอร์ต Serial มาจากเครื่อง backend และอัปเดตขณะเปิดขั้น Protocol
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, CheckCircle2, ChevronRight, Loader2, Save, Server, ShieldAlert, XCircle } from 'lucide-react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { ArrowLeft, CheckCircle2, ChevronRight, Loader2, RefreshCw, Save, Server, ShieldAlert, XCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useForm as useRHForm } from 'react-hook-form'
 import { Link } from 'react-router-dom'
 import { z } from 'zod'
 import { Topbar } from '../components/shared/Topbar'
-import { createNode, scanSubnet, testNodeConnectionDraft } from '../lib/api'
+import { createNode, listSerialPorts, scanSubnet, testNodeConnectionDraft } from '../lib/api'
 import type { ConnectionStep, ScanResult } from '../lib/api'
 
 // --- Validation Schemas ---
@@ -116,6 +118,18 @@ export function AddNodePage({ collapsed, setCollapsed }: { collapsed: boolean; s
   })
 
   const transportType = form2.watch('transport')
+  const serialPortValue = (form2.watch() as { serial_port?: string }).serial_port ?? ''
+  // Serial ถูกเลือกจึงอ่านพอร์ตจากเครื่อง backend และติดตามสายที่เพิ่งเสียบ/ถอด
+  const serialPortsQuery = useQuery({
+    queryKey: ['serial-ports'],
+    queryFn: listSerialPorts,
+    enabled: step === 2 && transportType === 'serial',
+    retry: false,
+    staleTime: 0,
+    refetchInterval: step === 2 && transportType === 'serial' ? 5_000 : false,
+    refetchIntervalInBackground: false,
+  })
+  const serialPorts = serialPortsQuery.data?.ports ?? []
 
   const onStep1Submit = (data: Step1Data) => {
     setStep1Data(data)
@@ -174,6 +188,7 @@ export function AddNodePage({ collapsed, setCollapsed }: { collapsed: boolean; s
           {step === 1 && (
             <form onSubmit={form1.handleSubmit(onStep1Submit)} className="space-y-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Device Information</h2>
+              <p className="text-sm text-gray-600">ระบุชื่อสำหรับแสดงในระบบและประเภทอุปกรณ์ ชื่อนี้ไม่จำเป็นต้องตรงกับ Hostname ที่ตั้งบนอุปกรณ์</p>
               
               <div className="space-y-4">
                 <div>
@@ -185,6 +200,7 @@ export function AddNodePage({ collapsed, setCollapsed }: { collapsed: boolean; s
                     placeholder="e.g. R1-Core"
                     autoFocus
                   />
+                  <p className="mt-1 text-xs text-gray-500">ใช้ชื่อสั้นที่แยกอุปกรณ์ได้ง่าย เช่น R2 หรือ SW1</p>
                   {form1.formState.errors.hostname && (
                     <p className="error-msg">{form1.formState.errors.hostname.message}</p>
                   )}
@@ -196,6 +212,7 @@ export function AddNodePage({ collapsed, setCollapsed }: { collapsed: boolean; s
                     <option value="router">Router</option>
                     <option value="switch">Switch</option>
                   </select>
+                  <p className="mt-1 text-xs text-gray-500">ประเภทอุปกรณ์กำหนดฟอร์มตั้งค่าที่จะแสดงภายหลัง</p>
                 </div>
               </div>
 
@@ -223,6 +240,7 @@ export function AddNodePage({ collapsed, setCollapsed }: { collapsed: boolean; s
                   </button>
                 </div>
               </div>
+              <p className="text-sm text-gray-600">เลือกช่องทางที่เครื่อง NetConfig ใช้เชื่อมต่ออุปกรณ์ แล้วกรอกข้อมูลตามวิธีที่เลือก</p>
 
               {/* Protocol selector */}
               <div className="flex bg-gray-100 p-1 rounded-lg">
@@ -249,7 +267,7 @@ export function AddNodePage({ collapsed, setCollapsed }: { collapsed: boolean; s
               {transportType === 'telnet' && (
                 <div className="bg-amber-50 border border-amber-200 text-amber-800 p-3 rounded-lg text-sm flex gap-2">
                   <ShieldAlert className="w-5 h-5 flex-shrink-0 text-amber-600" />
-                  <p><strong>Warning:</strong> Telnet sends credentials in plain text. Use SSH if possible.</p>
+                  <p><strong>ข้อควรทราบ:</strong> Telnet ส่งข้อมูลเข้าสู่ระบบโดยไม่เข้ารหัส เหมาะสำหรับเครือข่ายทดลองที่ควบคุมได้; หากอุปกรณ์รองรับ ควรเลือก SSH</p>
                 </div>
               )}
 
@@ -273,10 +291,33 @@ export function AddNodePage({ collapsed, setCollapsed }: { collapsed: boolean; s
                   </>
                 ) : (
                   <>
-                    <div className="md:col-span-1">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">COM Port</label>
+                    <div className="md:col-span-1 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <label htmlFor="detected-serial-port" className="block text-sm font-medium text-gray-700">USB Console / Serial Port</label>
+                        <button type="button" className="btn-ghost btn-sm inline-flex items-center gap-1" onClick={() => serialPortsQuery.refetch()} disabled={serialPortsQuery.isFetching}>
+                          <RefreshCw className={`h-4 w-4 ${serialPortsQuery.isFetching ? 'animate-spin' : ''}`} /> รีเฟรช
+                        </button>
+                      </div>
+                      <select
+                        id="detected-serial-port"
+                        className="select-field w-full"
+                        value={serialPorts.some((item) => item.port === serialPortValue) ? serialPortValue : ''}
+                        onChange={(event) => form2.setValue('serial_port', event.target.value, { shouldValidate: true })}
+                        disabled={serialPortsQuery.isLoading || serialPorts.length === 0}
+                      >
+                        <option value="">เลือกพอร์ตที่ตรวจพบ</option>
+                        {serialPorts.map((item) => (
+                          <option key={item.port} value={item.port}>{item.port} — {item.description}{item.is_usb ? ' (USB)' : ''}</option>
+                        ))}
+                      </select>
+                      {serialPortsQuery.isLoading && <p role="status" className="flex items-center gap-1 text-xs text-blue-700"><Loader2 className="h-3.5 w-3.5 animate-spin" /> กำลังตรวจพอร์ตบนเครื่องที่รัน backend...</p>}
+                      {serialPortsQuery.isError && <p role="alert" className="flex items-center gap-1 text-xs text-red-700"><XCircle className="h-3.5 w-3.5" /> อ่านรายการพอร์ตไม่สำเร็จ กดรีเฟรชหรือกรอกพอร์ตเองได้</p>}
+                      {serialPortsQuery.isSuccess && serialPorts.length === 0 && <p role="status" className="flex items-center gap-1 text-xs text-gray-600"><Server className="h-3.5 w-3.5" /> เครื่องที่รัน backend ยังไม่พบพอร์ต Serial ตรวจสาย USB และไดรเวอร์ แล้วกดรีเฟรช</p>}
+                      {serialPortsQuery.isSuccess && serialPorts.length > 0 && <p role="status" className="flex items-center gap-1 text-xs text-green-700"><CheckCircle2 className="h-3.5 w-3.5" /> พบ {serialPorts.length} พอร์ตบนเครื่องที่รัน backend</p>}
+                      {serialPortsQuery.isSuccess && serialPortValue && !serialPorts.some((item) => item.port === serialPortValue) && <p role="status" className="flex items-center gap-1 text-xs text-amber-700"><ShieldAlert className="h-3.5 w-3.5" /> พอร์ตที่ระบุไม่อยู่ในรายการปัจจุบัน โปรดตรวจสายก่อนทดสอบ</p>}
+                      <label htmlFor="manual-serial-port" className="block text-xs text-gray-600">หรือกรอกพอร์ตเอง</label>
                       {/* @ts-ignore */}
-                      <input {...form2.register('serial_port')} type="text" className={`input-field ${form2.formState.errors.serial_port ? 'input-error' : ''}`} placeholder="COM3" />
+                      <input id="manual-serial-port" {...form2.register('serial_port')} type="text" className={`input-field ${form2.formState.errors.serial_port ? 'input-error' : ''}`} placeholder="COM3" />
                       {/* @ts-ignore */}
                       {form2.formState.errors.serial_port && <p className="error-msg">{form2.formState.errors.serial_port.message}</p>}
                     </div>
@@ -309,7 +350,8 @@ export function AddNodePage({ collapsed, setCollapsed }: { collapsed: boolean; s
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Enable Secret <span className="text-gray-400 font-normal">(Optional)</span></label>
-                  <input {...form2.register('secret')} type="password" className="input-field" placeholder="Leave empty if same as password" />
+                  <input {...form2.register('secret')} type="password" className="input-field" placeholder="เว้นว่างหากอุปกรณ์ไม่ต้องใช้ enable secret" />
+                  <p className="mt-1 text-xs text-gray-500">ใช้เมื่อต้องเข้าสู่โหมด privileged EXEC เพื่อแก้ไขการตั้งค่า; การทดสอบการเชื่อมต่อไม่ตรวจขั้นนี้</p>
                 </div>
               </div>
 
@@ -367,6 +409,7 @@ export function AddNodePage({ collapsed, setCollapsed }: { collapsed: boolean; s
                   </button>
                 )}
               </div>
+              <p className="text-sm text-gray-600">ทดสอบการเข้าถึงอุปกรณ์ก่อนบันทึก หากขั้นใดไม่ผ่าน ระบบจะไม่สร้าง Node</p>
 
               {saveMutation.error && (
                 <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg text-sm mb-4">
@@ -385,7 +428,9 @@ export function AddNodePage({ collapsed, setCollapsed }: { collapsed: boolean; s
                   <Server className="w-12 h-12 text-gray-300 mb-4" />
                   <h3 className="font-medium text-gray-900 mb-2">ตรวจสอบก่อนบันทึก</h3>
                   <p className="text-gray-500 text-sm mb-6 max-w-sm">
-                    ระบบจะทดสอบ Ping, Port, Login และ Hostname ผ่าน {transportData?.transport.toUpperCase()} ก่อนบันทึก Node หากไม่ผ่านจะไม่บันทึกข้อมูล
+                    {transportData?.transport === 'serial'
+                      ? 'ระบบจะเปิดพอร์ต Serial ทดสอบการเข้าสู่ระบบ และอ่าน Hostname ก่อนบันทึก Node'
+                      : `ระบบจะตรวจ Ping, พอร์ต, การเข้าสู่ระบบ และ Hostname ผ่าน ${transportData?.transport.toUpperCase()} ก่อนบันทึก Node`}
                   </p>
                   
                   <button 
@@ -411,7 +456,7 @@ export function AddNodePage({ collapsed, setCollapsed }: { collapsed: boolean; s
               {/* Test Results */}
               {testResults.length > 0 && (
                 <div className="space-y-3 mt-6">
-                  <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-2">Connection Log</h3>
+                  <h3 className="text-sm font-semibold text-gray-900 tracking-wider mb-2">ผลตรวจการเชื่อมต่อ</h3>
                   <div className={`p-3 rounded-lg border ${testOverall === 'success' ? 'bg-green-50 border-green-100 text-green-800' : 'bg-red-50 border-red-100 text-red-800'}`}>
                     <p className="font-medium">ผลการทดสอบ: {testOverall === 'success' ? 'สำเร็จ' : 'ไม่สำเร็จ'}</p>
                     {hostnameDetected && <p className="text-sm mt-1">Hostname จากอุปกรณ์: {hostnameDetected}</p>}

@@ -471,6 +471,7 @@
               <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/></svg> Router · Telnet</span>
               <span class="badge badge-green"><span class="badge-dot"></span> Connected</span>
             </div>
+            <p style="font-size: var(--fs-xs); color: var(--muted); margin-top: 6px;">สถานะเป็นผลตรวจล่าสุด ไม่ใช่การเชื่อมต่อที่เปิดค้างไว้</p>
           </div>
         </div>
         <div class="device-actions">
@@ -499,7 +500,7 @@
         <!-- ===== INTERFACES TAB ===== -->
         <div class="tab-content" id="tab-interfaces">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-            <h3 style="font-size: var(--fs-lg); font-weight: 600;">Interfaces</h3>
+            <div><h3 style="font-size: var(--fs-lg); font-weight: 600;">Interfaces</h3><p style="font-size: var(--fs-sm); color: var(--muted);">แสดงสถานะพอร์ตจากอุปกรณ์ กดรีเฟรชเพื่อตรวจค่าล่าสุดหลัง Apply</p></div>
             <div style="display: flex; gap: 8px;">
             <button class="btn btn-secondary btn-sm" onclick="openLoopbackDialog()">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -987,7 +988,7 @@
         <div class="tab-content" id="tab-show">
           <div style="margin-bottom: 20px;">
             <h3 style="font-size: var(--fs-lg); font-weight: 600;">Show Commands</h3>
-            <p style="font-size: var(--fs-sm); color: var(--muted); margin-top: 4px;">Quick-access diagnostic commands grouped by domain</p>
+            <p style="font-size: var(--fs-sm); color: var(--muted); margin-top: 4px;">เลือกคำสั่งอ่านข้อมูลเพื่อตรวจสถานะอุปกรณ์ ผลลัพธ์ส่วนนี้ไม่เปลี่ยนการตั้งค่า</p>
           </div>
 
           <!-- Interfaces -->
@@ -1145,7 +1146,7 @@
       </button>
     </div>
     <div class="drawer-body">
-      <p style="font-size: var(--fs-sm); color: var(--muted); margin-bottom: 16px;">Review the commands below before applying to the device.</p>
+      <p style="font-size: var(--fs-sm); color: var(--muted); margin-bottom: 16px;">ตรวจคำสั่งก่อนส่งไปยังอุปกรณ์ ขั้น Preview ยังไม่เปลี่ยนการตั้งค่า</p>
       <div class="code-block" id="preview-commands" style="line-height: 1.8;"></div>
       <div id="apply-result" style="display: none; margin-top: 20px;">
         <h4 style="font-size: var(--fs-md); font-weight: 600; margin-bottom: 10px;">Apply Result</h4>

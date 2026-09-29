@@ -61,7 +61,7 @@ export function HistoryPage({ collapsed, setCollapsed }: { collapsed: boolean; s
     <Topbar collapsed={collapsed} setCollapsed={setCollapsed} title="Command History" breadcrumbs={<Link to="/" className="text-gray-500 hover:text-accent-DEFAULT">Nodes</Link>} />
     <main className="p-6 max-w-4xl mx-auto w-full">
       <div className="mb-4 flex flex-col gap-1 lg:flex-row lg:items-center lg:justify-between">
-        <p className="text-sm text-slate-600">ตรวจสอบคำสั่งที่ส่งไปยังอุปกรณ์และผลลัพธ์ย้อนหลัง</p>
+        <p className="text-sm text-slate-600">ตรวจสอบคำสั่งที่ส่งไปยังอุปกรณ์ ผลลัพธ์แต่ละคำสั่ง และเวลาที่ดำเนินการ รายการนี้เป็นบันทึกย้อนหลัง ไม่ใช่ค่าปัจจุบันของอุปกรณ์</p>
         {historyQuery.isSuccess && <span className="text-sm font-medium text-slate-700" aria-live="polite">{hasFilter ? 'พบ' : 'ทั้งหมด'} {total} รายการ</span>}
       </div>
       <div className="card mb-4 p-4">
@@ -83,6 +83,7 @@ export function HistoryPage({ collapsed, setCollapsed }: { collapsed: boolean; s
         <div><label className="mb-1 block text-xs font-semibold text-slate-600" htmlFor="history-from">ตั้งแต่</label><input id="history-from" type="datetime-local" className="input-field w-full min-w-0" value={timeFrom} onChange={(event) => changeTime(event.target.value, timeTo)} /></div>
         <div><label className="mb-1 block text-xs font-semibold text-slate-600" htmlFor="history-to">ถึง</label><input id="history-to" type="datetime-local" className="input-field w-full min-w-0" value={timeTo} onChange={(event) => changeTime(timeFrom, event.target.value)} /></div>
         </div>
+        <p className="mt-2 text-xs text-slate-500">ช่วงเวลาใช้เวลาท้องถิ่นของเครื่องที่เปิดเว็บ และรวมรายการที่เกิดภายในนาทีสิ้นสุดที่เลือก</p>
         {timeError && <p role="alert" className="mt-2 text-sm text-red-700">{timeError}</p>}
         <div className="mt-3 flex items-center justify-between gap-3">
         {hasFilter ? <button type="button" className="btn-ghost btn-sm" onClick={clearFilters}>ล้างตัวกรอง</button> : <span />}
@@ -110,7 +111,7 @@ export function HistoryPage({ collapsed, setCollapsed }: { collapsed: boolean; s
 
 /** ตารางผลพร้อมปุ่มขยายที่ใช้คีย์บอร์ดได้ */
 function HistoryTable({ entries, nodeNames, filtered, expanded, setExpanded }: { entries: HistoryEntry[]; nodeNames: Map<string, string>; filtered: boolean; expanded: string | null; setExpanded: (id: string | null) => void }) {
-  if (entries.length === 0) return <div className="card text-center py-16"><Clock className="w-9 h-9 text-gray-300 mx-auto mb-3" /><p className="text-gray-500">{filtered ? 'ไม่พบประวัติตามตัวกรอง' : 'ยังไม่มี command history'}</p></div>
+  if (entries.length === 0) return <div className="card text-center py-16"><Clock className="w-9 h-9 text-gray-300 mx-auto mb-3" /><p className="font-medium text-gray-700">{filtered ? 'ไม่พบรายการตามตัวกรอง' : 'ยังไม่มีประวัติคำสั่ง'}</p><p className="mt-1 text-sm text-gray-500">{filtered ? 'ลองปรับ Node สถานะ หรือช่วงเวลา' : 'ประวัติจะปรากฏหลังสั่ง Show หรือ Apply การตั้งค่า'}</p></div>
   return <><div className="space-y-3 lg:hidden">{entries.map((entry) => {
     const isOpen = expanded === entry.id
     return <HistoryCard key={entry.id} entry={entry} nodeName={nodeNames.get(entry.node_id) ?? entry.node_hostname ?? entry.node_id} isOpen={isOpen} onToggle={() => setExpanded(isOpen ? null : entry.id)} />
@@ -158,7 +159,7 @@ function HistoryDetail({ entry }: { entry: HistoryEntry }) {
     catch { setCopyState('คัดลอกไม่สำเร็จ') }
   }
   return <div className="p-4"><div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-    <div><div className="mb-2 flex items-center justify-between text-xs font-semibold text-gray-500">COMMAND <button type="button" className="btn-ghost btn-sm" onClick={copy}><Copy className="w-3 h-3" />{copyState}</button></div><pre className="terminal-area rounded-lg p-3 text-xs whitespace-pre-wrap overflow-auto max-h-56">{entry.commands.join('\n')}</pre></div>
-    <div><div className="mb-2 text-xs font-semibold text-gray-500">RESULT</div><div className="rounded-lg border border-gray-200 bg-white p-3 text-xs overflow-auto max-h-56 space-y-3">{entry.results.map((result, index) => <div key={index}><span className={result.status === 'success' ? 'text-green-700' : 'text-red-700'}>{result.status === 'success' ? 'สำเร็จ' : 'ไม่สำเร็จ'}</span> · <code>{result.command}</code>{result.error_code && <span className="text-red-700"> · {result.error_code}</span>}<pre className="whitespace-pre-wrap">{result.output || 'ไม่มีผลลัพธ์เพิ่มเติม'}</pre></div>)}</div></div>
+    <div><div className="mb-2 flex items-center justify-between text-xs font-semibold text-gray-500">คำสั่งที่ส่ง <button type="button" className="btn-ghost btn-sm" onClick={copy}><Copy className="w-3 h-3" />{copyState}</button></div><pre className="terminal-area rounded-lg p-3 text-xs whitespace-pre-wrap overflow-auto max-h-56">{entry.commands.join('\n')}</pre></div>
+    <div><div className="mb-2 text-xs font-semibold text-gray-500">ผลลัพธ์จากอุปกรณ์</div><div className="rounded-lg border border-gray-200 bg-white p-3 text-xs overflow-auto max-h-56 space-y-3">{entry.results.map((result, index) => <div key={index}><span className={result.status === 'success' ? 'text-green-700' : 'text-red-700'}>{result.status === 'success' ? 'สำเร็จ' : 'ไม่สำเร็จ'}</span> · <code>{result.command}</code>{result.error_code && <span className="text-red-700"> · {result.error_code}</span>}<pre className="whitespace-pre-wrap">{result.output || 'ไม่มีผลลัพธ์เพิ่มเติม'}</pre></div>)}</div></div>
   </div><details className="mt-3 text-xs text-slate-500"><summary className="cursor-pointer w-fit">ข้อมูลอ้างอิง</summary><p className="mt-2 break-all">Correlation ID: {entry.correlation_id}{entry.operation_id && ` · Operation ID: ${entry.operation_id}`}</p></details></div>
 }

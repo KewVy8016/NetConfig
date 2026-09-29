@@ -165,6 +165,20 @@ class NodeListResponse(BaseModel):
     nodes: list[NodeResponse]
 
 
+class SerialPortOption(BaseModel):
+    """พอร์ต Serial ที่เครื่อง backend ตรวจพบสำหรับให้ผู้ใช้เลือก"""
+
+    port: str
+    description: str
+    is_usb: bool
+
+
+class SerialPortsResponse(BaseModel):
+    """รายการพอร์ต Serial ปัจจุบันของเครื่อง backend"""
+
+    ports: list[SerialPortOption] = Field(default_factory=list)
+
+
 # ---------------------------------------------------------------------------
 # Test connection schemas
 # ---------------------------------------------------------------------------

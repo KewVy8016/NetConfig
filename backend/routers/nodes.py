@@ -7,6 +7,7 @@ import uuid
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, HTTPException, Query, Response, status
+from starlette.concurrency import run_in_threadpool
 
 from backend.database import get_db
 from backend.models import (
@@ -20,6 +21,7 @@ from backend.models import (
     ScanSubnetRequest,
     ScanSubnetResponse,
     SerialConfig,
+    SerialPortsResponse,
     SSHConfig,
     TelnetConfig,
     TestConnectionResponse,
@@ -28,6 +30,7 @@ from backend.models import (
 from backend.services.connection import get_node_lock, test_connection
 from backend.services.encryption import decrypt, encrypt
 from backend.services.scanner import scan_subnet
+from backend.services.serial_ports import list_serial_ports
 
 router = APIRouter(prefix="/nodes", tags=["nodes"])
 
@@ -251,6 +254,23 @@ async def test_node_connection_draft(payload: NodeCreate) -> TestConnectionRespo
 async def scan_nodes(payload: ScanSubnetRequest) -> ScanSubnetResponse:
     """probe เฉพาะ TCP 22/23 โดยไม่ login และไม่ scan subnet ขนาดใหญ่"""
     return ScanSubnetResponse(subnet=payload.subnet, results=await scan_subnet(payload.subnet))
+
+
+@router.get("/serial-ports", response_model=SerialPortsResponse, summary="พอร์ต USB/Serial ที่เครื่อง backend มองเห็น")
+async def get_serial_ports() -> SerialPortsResponse:
+    """คืนพอร์ต Serial ปัจจุบันโดยไม่เปิดพอร์ตหรือเชื่อมอุปกรณ์"""
+    try:
+        ports = await run_in_threadpool(list_serial_ports)
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={
+                "code": "SERIAL_PORT_SCAN_FAILED",
+                "message_th": "อ่านรายการพอร์ต Serial ไม่สำเร็จ กรุณาลองใหม่หรือกรอกพอร์ตเอง",
+                "correlation_id": _new_correlation_id(),
+            },
+        ) from None
+    return SerialPortsResponse(ports=ports)
 
 
 # ---------------------------------------------------------------------------

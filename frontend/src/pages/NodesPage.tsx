@@ -47,13 +47,15 @@ export function NodesPage({ collapsed, setCollapsed }: NodesPageProps) {
       <Topbar collapsed={collapsed} setCollapsed={setCollapsed} title="Nodes Dashboard" />
 
       <main className="p-6">
+        <p className="mb-4 text-sm text-gray-600">จัดการอุปกรณ์ที่บันทึกไว้และเปิดหน้าตั้งค่า สถานะเป็นผลตรวจล่าสุด โดยระบบตรวจซ้ำทุก 30 วินาทีขณะเปิดหน้านี้</p>
         {/* Toolbar */}
         <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center mb-6">
           <div className="relative w-full sm:w-72">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Search by hostname or IP..."
+              placeholder="ค้นหาชื่ออุปกรณ์หรือ IP"
+              aria-label="ค้นหาชื่ออุปกรณ์หรือ IP"
               className="input-field pl-9"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -91,18 +93,18 @@ export function NodesPage({ collapsed, setCollapsed }: NodesPageProps) {
         ) : isError ? (
           <div className="card border-red-200 bg-red-50 text-center py-12">
             <ShieldAlert className="w-8 h-8 text-red-500 mx-auto mb-3" />
-            <h3 className="text-red-700 font-medium">Failed to load nodes</h3>
-            <p className="text-red-600 text-sm mt-1">Backend connection error</p>
+            <h3 className="text-red-700 font-medium">โหลดรายการอุปกรณ์ไม่สำเร็จ</h3>
+            <p className="text-red-600 text-sm mt-1">ตรวจสอบว่า backend ทำงานอยู่ แล้วลองเปิดหน้านี้อีกครั้ง</p>
           </div>
         ) : data?.nodes.length === 0 ? (
           <div className="card text-center py-16">
             <Server className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-gray-900 font-medium text-lg mb-1">No nodes found</h3>
-            <p className="text-gray-500 text-sm mb-6">Get started by adding your first device.</p>
-            <Link to="/nodes/add" className="btn-primary inline-flex items-center gap-2">
+            <h3 className="text-gray-900 font-medium text-lg mb-1">{search ? 'ไม่พบอุปกรณ์ที่ตรงกับคำค้น' : 'ยังไม่มีอุปกรณ์'}</h3>
+            <p className="text-gray-500 text-sm mb-6">{search ? 'ลองค้นด้วยชื่ออุปกรณ์หรือ IP อื่น' : 'เพิ่มอุปกรณ์และทดสอบการเชื่อมต่อก่อนเริ่มตั้งค่า'}</p>
+            {!search && <Link to="/nodes/add" className="btn-primary inline-flex items-center gap-2">
               <Plus className="w-4 h-4" />
               Add Node
-            </Link>
+            </Link>}
           </div>
         ) : view === 'card' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -129,13 +131,13 @@ export function NodesPage({ collapsed, setCollapsed }: NodesPageProps) {
                 
                 <div className="mt-auto space-y-2 text-sm">
                   <div className="flex justify-between text-gray-500">
-                    <span>Address</span>
+                    <span>ที่อยู่จัดการ / พอร์ต</span>
                     <span className="text-gray-900 font-medium truncate max-w-[140px]" title={node.host || node.serial_port || ''}>
                       {node.host || node.serial_port || 'N/A'}
                     </span>
                   </div>
                   <div className="flex justify-between text-gray-500">
-                    <span>Protocol</span>
+                    <span>การเชื่อมต่อ</span>
                     <span className="text-gray-900 uppercase text-xs font-semibold bg-gray-100 px-2 py-0.5 rounded">
                       {node.transport}
                     </span>

@@ -147,6 +147,8 @@ known P0 security/correctness issue.
 
 ## Phase 5 — Interface Foundation: Loopback และ Switch L2/L3
 
+- [x] ปรับคำอธิบายหน้า Dashboard/Add Node/Node Detail/History ให้ชัดเจนและตรง workflow โดยไม่เปลี่ยน API พร้อมอัปเดต Design/คู่มือ — owner: Codex, 2026-09-29; `npm run build` และ `npm run lint` ผ่าน (lint มี React hook warnings เดิม), ตรวจข้อความจริงใน browser ที่ Add Node, Node Detail, History และตรวจ desktop/tablet; `frontend/src/pages/`, `Design/`, `docs/USER_GUIDE.md`
+- [x] Add Node แสดงพอร์ต USB console ที่เครื่อง backend ตรวจพบ ให้เลือก/รีเฟรช/กรอกเอง และทดสอบ API กับกรณีอ่านพอร์ตล้มเหลว — `backend/services/serial_ports.py`, `frontend/src/pages/AddNodePage.tsx`; 2026-09-29: Node API 23 passed, Ruff และ frontend build ผ่าน; ตรวจหน้า Serial ใน browser ที่ desktop/tablet แล้ว และ API จริงคืน `{"ports":[]}`; เครื่องทดสอบยังไม่พบสาย Serial จึงยังไม่ได้ยืนยันกับอุปกรณ์จริง
 - [x] อ่าน `Design/DESIGN.md` และ `Design/node-detail.html`; ออกแบบ/อัปเดต reference สำหรับ
   interface profile (Router/L3 routed port, L2 access port, SVI และ Loopback) ก่อนแก้ React
 - [x] Loopback: typed schema (หมายเลข, IPv4/mask, description, admin state), Jinja2 create/remove,

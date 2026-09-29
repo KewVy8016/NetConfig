@@ -416,17 +416,17 @@
         <div id="step-1">
           <div class="card" style="margin-bottom: 20px;">
             <h3 style="font-size: var(--fs-lg); font-weight: 600; margin-bottom: 4px;">Device Information</h3>
-            <p style="font-size: var(--fs-sm); color: var(--muted); margin-bottom: 20px;">Enter the IP address or hostname of your Cisco device.</p>
+            <p style="font-size: var(--fs-sm); color: var(--muted); margin-bottom: 20px;">ระบุชื่อสำหรับแสดงในระบบและประเภทอุปกรณ์ ชื่อนี้ไม่จำเป็นต้องตรงกับ Hostname ที่ตั้งบนอุปกรณ์</p>
 
             <div class="field">
               <label class="field-label">Device Name</label>
               <input type="text" class="input" placeholder="e.g. R1, SW-Core" id="device-name" />
-              <span class="field-hint">A short label for this device.</span>
+              <span class="field-hint">ใช้ชื่อสั้นที่แยกอุปกรณ์ได้ง่าย เช่น R2 หรือ SW1</span>
             </div>
             <div class="field">
               <label class="field-label">IP Address / Hostname</label>
               <input type="text" class="input" placeholder="e.g. 192.168.1.1" id="device-ip" style="font-family: var(--font-mono);" />
-              <span class="field-hint">The management IP for SSH, Telnet, or Serial connection.</span>
+              <span class="field-hint">ที่อยู่สำหรับ SSH หรือ Telnet; Serial ใช้พอร์ต COM แทน IP</span>
             </div>
             <div class="field">
               <label class="field-label">Device Type</label>
@@ -452,7 +452,7 @@
             <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:20px;">
               <div>
                 <h3 style="font-size: var(--fs-lg); font-weight: 600; margin-bottom: 4px;">Connection Protocol</h3>
-                <p style="font-size: var(--fs-sm); color: var(--muted);">Choose how to connect to the device.</p>
+                <p style="font-size: var(--fs-sm); color: var(--muted);">เลือกช่องทางที่เครื่อง NetConfig ใช้เชื่อมต่ออุปกรณ์ แล้วกรอกข้อมูลตามวิธีที่เลือก</p>
               </div>
               <button class="btn btn-secondary" type="button" onclick="openScanDialog()">Scan Network</button>
             </div>
@@ -493,16 +493,21 @@
               </div>
             </div>
 
-            <!-- Serial port -->
+            <!-- ตัวอย่างหน้าตารายการ Serial; production อ่านพอร์ตจริงจากเครื่อง backend -->
             <div id="serial-fields" style="display: none; margin-top: 20px;">
               <div class="field">
-                <label class="field-label">COM Port</label>
-                <select class="input" id="serial-port" style="width: auto;">
-                  <option>COM1</option>
-                  <option>COM2</option>
-                  <option selected>COM3</option>
-                  <option>COM4</option>
-                </select>
+                <label class="field-label" for="serial-port">USB Console / Serial Port</label>
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <select class="input" id="serial-port" style="flex:1;" onchange="document.getElementById('serial-port-manual').value = this.value">
+                    <option value="">เลือกพอร์ตที่ตรวจพบ</option>
+                    <option value="COM3">COM3 — USB Serial Port (USB)</option>
+                    <option value="COM5">COM5 — USB-to-Serial Adapter (USB)</option>
+                  </select>
+                  <button class="btn btn-secondary" type="button" onclick="document.getElementById('serial-port-status').textContent = 'ตัวอย่าง: พบ 2 พอร์ตบนเครื่องที่รัน backend'">รีเฟรช</button>
+                </div>
+                <span class="field-hint" id="serial-port-status">ตัวอย่าง: พบ 2 พอร์ตบนเครื่องที่รัน backend</span>
+                <label class="field-label" for="serial-port-manual" style="margin-top:8px;">หรือกรอกพอร์ตเอง</label>
+                <input class="input" id="serial-port-manual" placeholder="COM3" />
               </div>
               <div class="field">
                 <label class="field-label">Baud Rate</label>
@@ -551,7 +556,7 @@
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
               <div>
                 <h3 style="font-size: var(--fs-lg); font-weight: 600; margin-bottom: 2px;">Test Connection</h3>
-                <p style="font-size: var(--fs-sm); color: var(--muted);">Run diagnostics on <strong id="test-device-label">R1</strong> before saving. A failed test will not create a node.</p>
+                <p style="font-size: var(--fs-sm); color: var(--muted);">ทดสอบการเข้าถึง <strong id="test-device-label">R1</strong> ก่อนบันทึก หากไม่ผ่านระบบจะไม่สร้าง Node</p>
               </div>
               <button class="btn btn-sm btn-secondary" onclick="startTest()" id="retry-btn" style="display: none;">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
@@ -629,7 +634,7 @@
           <div class="card" style="text-align: center; padding: 48px 24px;">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" style="margin: 0 auto 16px;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
             <h3 style="font-size: var(--fs-xl); font-weight: 600; margin-bottom: 8px;">Node Added Successfully</h3>
-            <p style="color: var(--muted); margin-bottom: 24px;">Device is connected and ready for configuration.</p>
+            <p style="color: var(--muted); margin-bottom: 24px;">ทดสอบการเชื่อมต่อผ่านแล้ว เปิดรายละเอียด Node เพื่อตั้งค่าต่อ</p>
             <div style="display: flex; gap: 10px; justify-content: center;">
               <a href="node-detail.html" class="btn btn-primary">
                 Configure Device

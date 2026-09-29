@@ -249,7 +249,7 @@
       <div class="content">
         <!-- Filters -->
         <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; font-size: var(--fs-sm); color: var(--muted);">
-          <span>ตรวจสอบคำสั่งที่ส่งไปยังอุปกรณ์และผลลัพธ์ย้อนหลัง</span><strong style="color: var(--fg);">ทั้งหมด 42 รายการ</strong>
+          <span>ตรวจสอบคำสั่งที่ส่งไปยังอุปกรณ์ ผลลัพธ์แต่ละคำสั่ง และเวลาที่ดำเนินการ รายการนี้เป็นบันทึกย้อนหลัง ไม่ใช่ค่าปัจจุบันของอุปกรณ์</span><strong style="color: var(--fg);">ทั้งหมด 42 รายการ</strong>
         </div>
         <div class="history-filters" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; padding: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);">
           <label style="display: grid; gap: 4px; font-size: var(--fs-xs); color: var(--muted);">Node
@@ -262,6 +262,7 @@
           <label style="display: grid; gap: 4px; font-size: var(--fs-xs); color: var(--muted);">ถึง<input class="input" style="width: 100%; min-width: 0;" type="datetime-local" id="filter-to"></label>
           <div style="grid-column: 1 / -1; display: flex; justify-content: space-between;"><button class="btn btn-ghost btn-sm" onclick="resetFilters()">ล้างตัวกรอง</button><button class="btn btn-ghost btn-sm">รีเฟรช</button></div>
         </div>
+        <p style="font-size: var(--fs-xs); color: var(--muted); margin: -8px 0 16px;">ช่วงเวลาใช้เวลาท้องถิ่นของเครื่องที่เปิดเว็บ และรวมรายการที่เกิดภายในนาทีสิ้นสุดที่เลือก</p>
         <p id="filter-error" role="alert" style="display: none; color: var(--red); margin: -8px 0 16px;">เวลาสิ้นสุดต้องไม่อยู่ก่อนเวลาเริ่มต้น</p>
 
         <div class="table-wrap">

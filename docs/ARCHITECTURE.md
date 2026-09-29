@@ -37,6 +37,7 @@ IOS ตอบผล → Backend บันทึกผลรายคำสั่
 | ภาษาและ API server | Python 3.11+ + FastAPI 0.111 + Uvicorn 0.30 | เปิด HTTP API แบบ async, ผูก request/response schema และให้ frontend เรียกได้ |
 | Schema/ค่า environment | Pydantic 2 + pydantic-settings | ตรวจ IP/mask/transport/ค่าฟอร์มฝั่ง server; โหลดและตรวจ `NETCONFIG_*` ตอนเริ่มระบบ |
 | ติดต่อ Cisco IOS | Netmiko 4.3 + Paramiko 3.x | ใช้ transport SSH/Telnet/Serial และจัดการ IOS prompt/enable mode; pin Paramiko 3.x เพื่อเข้ากับ IOSv SSH รุ่นเก่าที่ใช้ในแล็บ |
+| ค้นหาสาย Console | pySerial 3.5 | อ่านรายการ COM/tty ที่เครื่อง backend มองเห็นเพื่อให้ผู้ใช้เลือก USB console โดยไม่เปิดพอร์ต |
 | สร้างคำสั่ง | Jinja2 3.1 | รวมรูปแบบ CLI ใน template ฝั่ง backend แทนการต่อ string จาก browser |
 | เก็บข้อมูล | SQLite (Python stdlib) | เก็บ Node, preview operation และ history ในไฟล์เดียว เหมาะกับโปรเจกต์แล็บเครื่องเดียว |
 | เก็บ credential | `cryptography` 42 / Fernet | เข้ารหัส credential ก่อนลง SQLite; key มาจาก environment/`.env` |
@@ -84,7 +85,7 @@ NetConfig/
 ├─ backend/            HTTP boundary → services → device / database
 │  ├─ main.py · config.py · database.py · models.py
 │  ├─ routers/          nodes.py · config.py
-│  ├─ services/         connection.py · scanner.py · renderer.py · parser.py · encryption.py
+│  ├─ services/         connection.py · scanner.py · serial_ports.py · renderer.py · parser.py · encryption.py
 │  ├─ templates/        Cisco IOS command templates (*.j2)
 │  └─ tests/            API · renderer/parser · fake-device tests
 ├─ Design/             visual/interaction contract; ไม่ใช่หน้าเว็บที่รัน
@@ -130,6 +131,7 @@ NetConfig/
 | `backend/database.py::init_db` / `get_db` | สร้างตารางและเปิด transaction/connection SQLite | ตาราง `nodes`, `operations`, `command_history` |
 | `backend/services/connection.py` | `test_connection`, `build_transport_from_row`, `get_node_lock`, `send_config_commands`, `send_show_command` | ติดต่อ IOS ผ่าน Netmiko; lock ต่อ Node, connection อายุสั้น |
 | `backend/services/scanner.py::scan_subnet` | probe TCP 22/23 แบบจำกัด concurrency | ไม่ login หรือบันทึก Node |
+| `backend/services/serial_ports.py::list_serial_ports` | อ่านพอร์ต COM/tty ที่ระบบปฏิบัติการของ backend ตรวจพบ เรียง USB ก่อน | ไม่เปิดพอร์ตและไม่ทดสอบ IOS; ใช้เฉพาะ Add Node |
 | `backend/services/renderer.py` | `render_*`, `hash_payload`, แปลง typed payload เป็น CLI | ไม่รับ raw CLI จาก browser |
 | `backend/services/parser.py` | `parse_show_ip_interface_brief`, `parse_show_interface_detail`, `parse_static_routes`, `parse_*_config`, `parse_show_vlan_brief` | แปลง output จริงเป็น state ที่ฟอร์มใช้ |
 | `backend/services/encryption.py` | `encrypt`, `decrypt`, `redact_text` | เก็บ credential ที่เข้ารหัสและลดข้อมูลลับใน audit |
@@ -178,6 +180,8 @@ flowchart TD
 ```
 
 **อธิบายผังเพิ่ม Node:** Scan ช่วยหา IP ที่เปิด SSH/Telnet และเติมฟอร์มเท่านั้น จากนั้น Test ใช้ข้อมูลในฟอร์มต่อไปยังอุปกรณ์จริงและคืนผลแยก Ping/Port/Login/Hostname โดยยังไม่บันทึก หากผ่านจึงกด Save เพื่อให้ backend ตรวจ payload, เข้ารหัส credential และสร้างแถวใน `nodes` เมื่อ Test ไม่ผ่าน เส้นทางหยุดที่ข้อความผิดพลาด ไม่มี Node ใหม่ในฐานข้อมูล
+
+เมื่อเลือก Serial มีทางเข้าฟอร์มอีกเส้น: `AddNodePage.tsx` → `api.ts::listSerialPorts` → `nodes.py::get_serial_ports` → `serial_ports.py::list_serial_ports` → pySerial อ่านพอร์ตจากเครื่อง backend → UI แสดงชื่อพอร์ตและคำอธิบายให้เลือก รายการนี้รีเฟรชได้และไม่เปิดพอร์ต; ขั้น Test Connection เดิมจึงเป็นตัวตรวจว่าเข้า IOS ได้จริง
 
 วิธีไล่ไฟล์: ถ้าสแกนไม่พบให้เริ่ม `AddNodePage.tsx::selectScanResult`/`scanSubnet` → `nodes.py::scan_nodes` → `scanner.py::_probe`; ถ้า Ping ผ่านแต่ Login ไม่ผ่าน ให้ดู `test_node_connection_draft` → `connection.py::test_connection`/`build_device_dict`; ถ้ากด Save แล้วผิดพลาดให้ดู `create_node`, `NodeCreate`, `encrypt` และตาราง `nodes`
 

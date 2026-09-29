@@ -245,6 +245,7 @@ Badge always includes `.badge-dot` (colored dot) + text label.
 - Node is never persisted when the pre-save connection test fails; show the failure and offer Retry/Back
 - Telnet username is optional because IOS VTY may be configured for password-only login; SSH still requires username/password
 - Serial console username and password are optional because a local console may open directly at the IOS prompt
+- Selecting Serial loads the currently available COM/tty ports from the machine running the backend. The list refreshes while this step is open and has a manual Refresh action; each option shows the port, device description, and a USB label when detected. USB ports appear first. Loading, error, and empty states explain what happened. The user can enter a port manually when discovery is unavailable. Listing never opens a port or creates a Node; Test Connection is still required before Save.
 - **Scan Network** appears only for SSH/Telnet and opens a standard centered dialog. It accepts a valid IPv4 subnet up to `/28`, probes only TCP 22/23 without login, and shows an error, empty, loading, or result state.
 - Choosing **Use SSH** or **Use Telnet** fills the Protocol form host/port, selects the matching transport, and closes the dialog. Close, backdrop, and Escape dismiss it without changing the form; serial has no network scan.
 
@@ -393,6 +394,15 @@ stays open so the user can read the error and take recovery action.
 10. **No emojis** in UI
 11. **Icons restrained** — text labels preferred, no icon overload
 12. **Consistent navigation** — sidebar + back breadcrumb across all pages
+
+### Content and help text
+
+- Use concise, professional Thai for guidance, empty/error states, and action outcomes. Keep Cisco terms such as Interface, VLAN, Preview, Apply, and protocol names when they help users match the device workflow.
+- Explain **what the section shows**, **what the next action does**, and **whether that action changes the device**. Avoid implementation-only wording such as “backend validation” in the primary explanation.
+- Dashboard and Node Detail must clarify that Connected/Unreachable reflect the **latest check**, not a permanently open session. History must clarify that records are past operations, not current device configuration.
+- Add Node guidance follows the actual wizard: Device Info collects alias/type; Protocol collects endpoint or local Serial port; Test & Save verifies access before persistence. For Serial, do not imply Ping/TCP port checks are required.
+- Configuration forms must state that Preview only displays generated commands; Apply is the explicit device-changing step. Save Config is separate from Apply and writes the running configuration to startup configuration.
+- Error and empty states should name the failed or missing resource and provide a practical next step. Status remains icon + color + text, and guidance must remain legible at desktop and tablet widths.
 
 ---
 

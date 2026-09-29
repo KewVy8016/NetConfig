@@ -49,6 +49,8 @@ export interface NodeCreate {
 
 export interface ScanResult { host: string; open_ports: number[] }
 export interface ScanSubnetResponse { subnet: string; results: ScanResult[] }
+export interface SerialPortOption { port: string; description: string; is_usb: boolean }
+export interface SerialPortsResponse { ports: SerialPortOption[] }
 
 export interface NodeResponse {
   id: string
@@ -420,6 +422,16 @@ export async function testNodeConnectionDraft(payload: NodeCreate): Promise<Test
 /** ค้นหาเฉพาะ TCP 22/23 ใน subnet ขนาดเล็กสำหรับ Add Node */
 export async function scanSubnet(subnet: string): Promise<ScanSubnetResponse> {
   try { const { data } = await api.post<ScanSubnetResponse>('/nodes/scan', { subnet }); return data } catch (error) { throw extractApiError(error as AxiosError) }
+}
+
+/** อ่านพอร์ต Serial ที่เครื่อง backend ตรวจพบ ณ เวลาที่เรียก */
+export async function listSerialPorts(): Promise<SerialPortsResponse> {
+  try {
+    const { data } = await api.get<SerialPortsResponse>('/nodes/serial-ports')
+    return data
+  } catch (error) {
+    throw extractApiError(error as AxiosError)
+  }
 }
 
 /** สร้าง preview interface โดยยังไม่ส่งคำสั่งไปอุปกรณ์ */
