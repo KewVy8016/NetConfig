@@ -6,7 +6,7 @@
 
 - เครื่องที่รัน backend ต้องเข้าถึง management IP/พอร์ต SSH หรือ Telnet ของอุปกรณ์ได้จริง; สำหรับ Serial ต้องมีช่องทาง Serial ที่ Netmiko ใช้ได้
 - ติดตั้ง Python 3.11+, Node.js 18+ และ dependency ตาม [README.md](../README.md); ตั้งค่า `.env` ตาม `.env.example` โดยกำหนด `NETCONFIG_FERNET_KEY` ก่อนรัน backend และรักษา key เดิมไว้เพื่ออ่าน credential เดิม
-- ให้ Cisco IOS มี username/password หรือ line password ตาม protocol ที่ใช้ รวมถึง enable secret หากงานนั้นต้องเข้า privileged mode
+- ให้ Cisco IOS มี username/password หรือ line password ตาม protocol ที่ใช้ ถ้าอุปกรณ์ถามรหัสเมื่อสั่ง `enable` ให้กรอก Enable Secret ใน Node; console ที่เข้า `#` ได้เองหรือสั่ง `enable` โดยไม่ถามรหัสไม่จำเป็นต้องมี secret
 - แอปไม่มีระบบ login เว็บสำหรับหลายผู้ใช้ในรุ่นนี้ จึงควรใช้ในแล็บที่ควบคุมการเข้าถึงได้
 
 บน Windows สามารถดับเบิลคลิก `run-netconfig.bat` ที่ root โครงการ สคริปต์จะเปิด backend ที่ `127.0.0.1:8000`, UI ที่ `http://127.0.0.1:5175/` และ browser หากพอร์ตนั้นมีบริการอยู่แล้วจะไม่เปิดซ้ำ ตรวจ backend ได้ที่ `http://127.0.0.1:8000/health`
@@ -41,7 +41,7 @@ Scan ตรวจเพียง port 22/23 ไม่รู้ชื่ออุ
 
 ## 5. ตั้ง Routing และดูค่าปัจจุบัน
 
-สำหรับ Router เปิดแท็บ **Routing** แล้วเลือก Static/default route, RIP, OSPF, EIGRP หรือ BGP ฟอร์มจะรับพารามิเตอร์ที่จำเป็นและอ่าน state ที่มีอยู่จาก device เพื่อช่วยแก้หรือลบ อย่าพิมพ์ Cisco CLI ลงในฟอร์ม เพราะ CLI ถูกสร้างที่ backend จากข้อมูลที่ตรวจแล้ว หลัง Apply ให้ใช้แท็บ **Show** ตรวจ `show ip route`, `show ip protocols` หรือคำสั่ง neighbor ของ protocol นั้น และทดสอบการสื่อสารจริงเมื่อมี topology รองรับ
+สำหรับ Router เปิดแท็บ **Routing** แล้วเลือก Static/default route, RIP, OSPF, EIGRP หรือ BGP ฟอร์มจะรับพารามิเตอร์ที่จำเป็นและอ่าน state ที่มีอยู่จาก running-config เพื่อช่วยแก้หรือลบ แม้ยังไม่ตั้ง IP ให้ interface ก็ตรวจ process ที่กำหนดไว้ได้ “อ่านไม่ได้” หมายถึงการเชื่อมต่อ/สิทธิ์อ่านมีปัญหา ไม่ใช่ “ยังไม่ตั้งค่า” หลัง Apply ให้ใช้แท็บ **Show** ตรวจ `show ip route`, `show ip protocols` หรือคำสั่ง neighbor ของ protocol นั้น และทดสอบการสื่อสารจริงเมื่อมี topology รองรับ
 
 แท็บ Routing ไม่แสดงสำหรับ Node ที่บันทึกเป็น Switch; งาน L3 บางชนิดของ switch เช่น routed port/SVI อยู่ในส่วน Interface แทน
 
@@ -62,7 +62,13 @@ Preview มีอายุ 5 นาที หากหมดอายุหร�
 
 เวลาที่กรองเป็นเวลาท้องถิ่นของเครื่องที่เปิดเว็บ และช่วง “ถึง” รวมเหตุการณ์ภายในนาทีที่เลือก ประวัติเป็นผลการดำเนินการในอดีต; หากต้องการยืนยันค่าปัจจุบัน ให้ใช้ Show อ่านจากอุปกรณ์อีกครั้ง
 
-## 8. เมื่อใช้งานไม่สำเร็จ
+## 8. CLI และการลบ Node
+
+เปิดแท็บ **CLI** ในหน้า Node Detail เพื่อเชื่อมต่อ session ชั่วคราว ช่องพิมพ์อยู่ใต้ผลลัพธ์ในกรอบ terminal เดียวกัน พิมพ์คำสั่ง IOS ทีละบรรทัดแล้วกด Enter; ใช้ ↑↓ เรียกคำสั่งก่อนหน้า และ Esc ล้างช่องพิมพ์ Copy/Clear จัดการข้อความบนหน้าจอ ส่วน Disconnect/Reconnect จัดการ session หากการเชื่อมต่อหลุด ระบบจะแสดง Disconnected และให้กด Reconnect คำสั่งส่งทันทีโดยไม่มี Preview จึงควรตรวจคำสั่งก่อนส่ง หากต้องการเก็บ config หลัง reboot ให้ใช้ Save Config แยกต่างหาก History บันทึกผลต่อคำสั่ง แต่ไม่เก็บข้อความคำสั่งและ output ของ CLI เพื่อหลีกเลี่ยงการเก็บรหัสผ่าน
+
+กด **ลบ Node** ที่ Dashboard หรือ Node Detail แล้วอ่านชื่อในกล่องยืนยัน การลบเอาข้อมูลเชื่อมต่อและ preview ที่ค้างออกจากแอป ไม่ลบ config บนอุปกรณ์ และ History เดิมยังอยู่
+
+## 9. เมื่อใช้งานไม่สำเร็จ
 
 | อาการ | ตรวจอย่างแรก |
 |---|---|

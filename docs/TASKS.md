@@ -147,6 +147,14 @@ known P0 security/correctness issue.
 
 ## Phase 5 — Interface Foundation: Loopback และ Switch L2/L3
 
+- [x] แก้การตรวจ privilege ของ Console ที่ไม่มี Enable Secret และแยก Routing read error จาก Off; แยก state schema จาก config schema เพื่ออ่าน OSPF/EIGRP/BGP ที่ยังไม่มี Router ID หรือ IP บน interface โดยไม่ทิ้ง network/neighbor — `backend/services/connection.py`, `backend/models.py`, `backend/routers/config.py`, `frontend/src/pages/NodeDetailPage.tsx`
+- [x] เพิ่ม CLI session ชั่วคราวใน Node Detail พร้อมคำเตือน, ปุ่ม Disconnect/Reconnect, ประวัติคำสั่งในหน้าจอและ audit แบบไม่เก็บข้อความลับ — `backend/routers/terminal.py`, `frontend/src/components/CliTerminal.tsx`
+- [x] ปรับหน้า CLI เป็น device-console workspace เดียวและกัน event จาก WebSocket session เก่าทับสถานะใหม่ — `frontend/src/components/CliTerminal.tsx`, `Design/node-detail.html`; ทดสอบผ่าน browser กับ R3 ด้วย `show ip interface brief`, `show version`, ↑, Esc, Disconnect/Reconnect โดยไม่เปลี่ยน config อุปกรณ์
+- [x] แก้ refresh/deep link หน้า Node/Add Node/History ได้ JSON แทน React ด้วย Vite proxy bypass สำหรับ HTML navigation — `frontend/vite.config.ts`; 2026-09-30: ตรวจ HTML ของ 4 routes, JSON ของ Node/History และ WebSocket invalid Node (4404) ผ่าน; frontend build/lint ผ่าน (warnings เดิม)
+- [ ] ทำ visual QA หน้า CLI ที่ viewport 768–1024px จริง; browser ในรอบนี้ย่อ viewport เพื่อเทียบ tablet ไม่ได้ จึงยืนยันได้เฉพาะ desktop และ layout wrap จากโค้ด
+- [x] เพิ่ม Delete Node ที่ Dashboard/Detail พร้อม confirmation; ลบ pending operation แต่คง History — `backend/routers/nodes.py`, `frontend/src/pages/NodesPage.tsx`, `frontend/src/pages/NodeDetailPage.tsx`
+- [ ] ตรวจบน USB Console จริงที่ไม่มี Enable Secret: อ่าน routing, เปิด CLI และ Preview/Apply config หลังเสียบอุปกรณ์; unit/API fake ผ่านแล้ว แต่รอบนี้ไม่มีสาย Console ให้ยืนยันผลบนเครื่องจริง
+
 - [x] ปรับคำอธิบายหน้า Dashboard/Add Node/Node Detail/History ให้ชัดเจนและตรง workflow โดยไม่เปลี่ยน API พร้อมอัปเดต Design/คู่มือ — owner: Codex, 2026-09-29; `npm run build` และ `npm run lint` ผ่าน (lint มี React hook warnings เดิม), ตรวจข้อความจริงใน browser ที่ Add Node, Node Detail, History และตรวจ desktop/tablet; `frontend/src/pages/`, `Design/`, `docs/USER_GUIDE.md`
 - [x] Add Node แสดงพอร์ต USB console ที่เครื่อง backend ตรวจพบ ให้เลือก/รีเฟรช/กรอกเอง และทดสอบ API กับกรณีอ่านพอร์ตล้มเหลว — `backend/services/serial_ports.py`, `frontend/src/pages/AddNodePage.tsx`; 2026-09-29: Node API 23 passed, Ruff และ frontend build ผ่าน; ตรวจหน้า Serial ใน browser ที่ desktop/tablet แล้ว และ API จริงคืน `{"ports":[]}`; เครื่องทดสอบยังไม่พบสาย Serial จึงยังไม่ได้ยืนยันกับอุปกรณ์จริง
 - [x] อ่าน `Design/DESIGN.md` และ `Design/node-detail.html`; ออกแบบ/อัปเดต reference สำหรับ

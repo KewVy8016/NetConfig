@@ -99,5 +99,4 @@ pytest tests/ -v
 - Preview หมดอายุหรือ Node Busy: Refresh actual state แล้วสร้าง Preview ใหม่ เพราะ Apply จะยอมรับเฉพาะ operation/hash ที่ยัง valid
 - BGP neighbor ยังไม่รับ prefix: ตรวจ local/remote AS, IP link, advertised network ต้องมีอยู่ใน routing table และรอ BGP converge ช่วงสั้น ๆ
 
-การตั้งค่าผ่าน UI จะไม่ส่ง CLI ตรงจาก browser; ต้องผ่าน preview drawer และยืนยันก่อน Apply เสมอ.
-Raw CLI terminal ถูกปิดในรุ่น Assignment เพื่อให้การสาธิตตรวจสอบจาก Preview และ History ได้ชัดเจน.
+ฟอร์มตั้งค่าผ่าน Preview → Apply; แท็บ CLI เปิด session แยกสำหรับแล็บและส่งคำสั่งทีละบรรทัดทันที พร้อม audit ผลใน History โดยไม่เก็บเนื้อหาคำสั่งหรือ output ที่อาจมีรหัสผ่าน. Console ที่สั่ง `enable` โดยไม่ถามรหัสใช้งานได้โดยไม่กรอก Enable Secret.

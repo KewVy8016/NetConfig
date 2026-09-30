@@ -17,8 +17,9 @@ NetConfig เป็นเว็บแอปสำหรับจัดการ 
 | Interface | อ่านรายการ interface และค่าปัจจุบันจากอุปกรณ์เพื่อเลือกและเติมฟอร์ม; ตั้ง IPv4/netmask/description, ลบ IP และเปิด/ปิด interface | ปุ่มเปิด/ปิดไม่บังคับให้ interface มี IP; ต้องตรวจผลกับอุปกรณ์หลัง Apply |
 | Loopback | เพิ่มหรือแก้ Loopback ผ่านฟอร์มแยกในส่วน Interface | โค้ดมีแล้ว แต่หลักฐาน manual EVE ของ Phase 5 ยังไม่ปิด checkpoint |
 | Switch L2/L3 | Access port/VLAN, VLAN, SVI และ routed port; ตรวจ capability ของอุปกรณ์ก่อนแสดง/ใช้คำสั่งเฉพาะ | แท็บ Routing ซ่อนสำหรับ Node ที่บันทึกเป็น Switch; การเปลี่ยน routed port กลับเป็น L2 คืนเพียง `switchport` ไม่คืนค่า L2 เดิมทั้งหมด |
-| Routing | Static/default route, RIP, OSPF, EIGRP, BGP พร้อม flow เพิ่ม/แก้/ลบที่รองรับ | อ่านสถานะ routing จากอุปกรณ์; มุ่ง Cisco IOS IPv4 basic lab ไม่ใช่ policy ขั้นสูง |
+| Routing | Static/default route, RIP, OSPF, EIGRP, BGP พร้อม flow เพิ่ม/แก้/ลบที่รองรับ | อ่าน running-config แม้ interface ยังไม่มี IP; หากอ่านไม่ได้จะแสดงสถานะผิดพลาด ไม่ตีความเป็น Off |
 | Show | สั่งรายการที่อนุญาต เช่น interface brief, route, protocol, neighbor, running-config | ไม่ใช่ช่องให้พิมพ์คำสั่งใดก็ได้; แสดง parsed data เมื่อรองรับ และ raw output เมื่อ parser ใช้ไม่ได้ |
+| CLI Terminal | เปิด session ชั่วคราว ส่งคำสั่ง IOS ทีละบรรทัด, ใช้ ↑↓ ย้อนคำสั่ง, Copy/Clear/Disconnect/Reconnect | ส่งทันทีโดยไม่มี Preview; มีคำเตือนและ audit ผลต่อคำสั่ง แต่ไม่เก็บเนื้อหา CLI/output ที่อาจมีรหัส |
 | Preview → Apply | แสดง CLI ที่ backend สร้างจากข้อมูลฟอร์มก่อนส่งจริง; ต้องกด Apply แยก | Preview หมดอายุใน 5 นาที และ Apply ตรวจ operation/payload hash; ผลแต่ละคำสั่งบันทึกแยก |
 | Save Config | มีปุ่ม Preview/Apply สำหรับ `write memory` | Apply อื่น ๆ ไม่บันทึก startup-config อัตโนมัติ |
 | History | ดูประวัติคำสั่ง/ผลลัพธ์, ชื่อ Node ปัจจุบันหรือชื่อที่เก็บไว้ก่อนลบ, กรอง Node/สถานะ/ช่วงเวลา, เปลี่ยนหน้าและดูรายละเอียด | เวลาที่กรองใน UI เป็นเวลาท้องถิ่น; backend เก็บเวลา UTC และกรองก่อนแบ่งหน้า |
@@ -39,7 +40,7 @@ NetConfig เป็นเว็บแอปสำหรับจัดการ 
 - งานหลักถึง **Phase 4** อยู่ในโค้ดและ checklist; รายการ Loopback/Switch ของ **Phase 5** มี implementation/test แต่ `docs/TASKS.md` ยังรอหลักฐาน manual EVE สำหรับ Loopback, L2 access VLAN+SVI และ L3 routed port จึงยังไม่ถือว่าผ่าน checkpoint นั้น
 - Connected หมายถึง **ผลตรวจล่าสุดผ่าน** ไม่ใช่ session ที่เชื่อมค้างตลอด หากอุปกรณ์ดับหลังการตรวจ สถานะจะเปลี่ยนเมื่อมีการตรวจครั้งถัดไป
 - Scan เป็นการหา port SSH/Telnet ที่เปิดอยู่ ไม่ใช่ CDP/LLDP discovery และไม่สามารถตรวจ switch L2 ที่ไม่มี IP สำหรับบริหารจัดการ
-- ยังไม่มี terminal สำหรับส่ง raw config CLI ใน UI; แท็บ CLI เป็น placeholder การตั้งค่าต้องผ่านฟอร์มและ Preview/Apply
+- CLI เหมาะกับแล็บผู้ใช้เครื่องเดียวและส่งคำสั่งทันที ส่วนฟอร์มตั้งค่ายังคงใช้ Preview/Apply; terminal ไม่บันทึก startup-config ให้อัตโนมัติ
 - ไม่มี automatic rollback หรือ transaction บนอุปกรณ์ Cisco IOS; เมื่อ Apply หลายคำสั่งแล้วบางคำสั่งล้มเหลว ต้องตรวจ state จริงและแก้ไขต่อ
 - การเปลี่ยนค่า running-config **ไม่เท่ากับ** การบันทึก startup-config; ใช้ Save Config เมื่อยืนยันแล้วว่าต้องการเก็บค่าหลัง reboot
 - ไม่ควรตีความว่าเป็นระบบ production/multi-user: auth/roles, backup/diff/restore, advanced L2, ACL/NAT/AAA, IPv6 และการขยายระบบอยู่ใน backlog หรืออยู่นอกขอบเขตปัจจุบัน ดู [CONFIG_COVERAGE.md](CONFIG_COVERAGE.md) และ [TASKS.md](TASKS.md)

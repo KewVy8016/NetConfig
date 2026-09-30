@@ -4,7 +4,7 @@
 
 ## NetConfig ทำงานอย่างไร — อ่านส่วนนี้ก่อน
 
-NetConfig คือ “หน้าฟอร์มสำหรับสั่ง Cisco IOS” ในแล็บ ผู้ใช้เพิ่มอุปกรณ์ด้วย IP/port และข้อมูลเชื่อมต่อ จากนั้นเลือกสิ่งที่ต้องการตั้งค่า เช่น interface หรือ routing โปรแกรมอ่านค่าปัจจุบันจากอุปกรณ์ สร้างคำสั่งให้ตรวจใน Preview และส่งจริง **เฉพาะเมื่อกด Apply** ผลการส่งถูกเก็บใน History
+NetConfig คือ “หน้าฟอร์มสำหรับสั่ง Cisco IOS” ในแล็บ ผู้ใช้เพิ่มอุปกรณ์ด้วย IP/port และข้อมูลเชื่อมต่อ จากนั้นเลือกสิ่งที่ต้องการตั้งค่า เช่น interface หรือ routing โปรแกรมอ่านค่าปัจจุบันจากอุปกรณ์ สร้างคำสั่งให้ตรวจใน Preview และส่งจริง **เฉพาะเมื่อกด Apply** ผลการส่งถูกเก็บใน History อีกทางหนึ่งคือแท็บ CLI สำหรับส่งคำสั่งทีละบรรทัดทันทีผ่าน session ชั่วคราว; เส้นทางนี้อธิบายแยกด้านล่าง
 
 ```text
 ผู้ใช้กรอกฟอร์ม
@@ -37,6 +37,7 @@ IOS ตอบผล → Backend บันทึกผลรายคำสั่
 | ภาษาและ API server | Python 3.11+ + FastAPI 0.111 + Uvicorn 0.30 | เปิด HTTP API แบบ async, ผูก request/response schema และให้ frontend เรียกได้ |
 | Schema/ค่า environment | Pydantic 2 + pydantic-settings | ตรวจ IP/mask/transport/ค่าฟอร์มฝั่ง server; โหลดและตรวจ `NETCONFIG_*` ตอนเริ่มระบบ |
 | ติดต่อ Cisco IOS | Netmiko 4.3 + Paramiko 3.x | ใช้ transport SSH/Telnet/Serial และจัดการ IOS prompt/enable mode; pin Paramiko 3.x เพื่อเข้ากับ IOSv SSH รุ่นเก่าที่ใช้ในแล็บ |
+| CLI ระหว่างเปิดแท็บ | Browser WebSocket API + FastAPI WebSocket + Starlette threadpool | ส่งคำสั่ง/ผลลัพธ์ใน session เดียว; ย้าย Netmiko ที่เป็น blocking ไปทำงานใน threadpool โดยไม่เพิ่ม dependency ฝั่งเว็บ |
 | ค้นหาสาย Console | pySerial 3.5 | อ่านรายการ COM/tty ที่เครื่อง backend มองเห็นเพื่อให้ผู้ใช้เลือก USB console โดยไม่เปิดพอร์ต |
 | สร้างคำสั่ง | Jinja2 3.1 | รวมรูปแบบ CLI ใน template ฝั่ง backend แทนการต่อ string จาก browser |
 | เก็บข้อมูล | SQLite (Python stdlib) | เก็บ Node, preview operation และ history ในไฟล์เดียว เหมาะกับโปรเจกต์แล็บเครื่องเดียว |
@@ -69,6 +70,8 @@ flowchart LR
 
 **อธิบายผังภาพรวม:** เส้นทางขาไปเริ่มที่หน้า React แล้วผ่าน `api.ts` ซึ่งเป็นจุดรวมการเรียก HTTP FastAPI ตรวจ request ด้วย Pydantic ก่อนให้ router ประสานงานกับฐานข้อมูลหรือ service ส่วน service มีงานคนละแบบ: renderer ใช้ Jinja2 สร้างคำสั่ง, connection ใช้ Netmiko ติดต่อ IOS เส้นทางขากลับนำผลอุปกรณ์ผ่าน router/API กลับมาแสดงที่หน้าเว็บ ไม่ได้ให้อุปกรณ์เขียนข้อมูลลงหน้าเว็บโดยตรง
 
+การเปิด URL หรือรีเฟรช `/nodes/:id`, `/nodes/add` และ `/history` เป็นการขอ HTML ของหน้าเว็บ. Vite ใช้ `bypassPageNavigation` ตรวจ GET ที่มี `Accept: text/html` และไม่มี WebSocket upgrade แล้วส่ง `index.html` ให้ React Router เลือกหน้า; request ของ Axios ที่รับ JSON ยังส่งไป backend ตามเส้นทางเดิม. การ deploy frontend ด้วย web server อื่นต้องตั้ง SPA fallback และแยก page navigation/API ในลักษณะเดียวกัน
+
 Frontend ไม่คุยกับ EVE-NG หรืออุปกรณ์โดยตรง และ backend ไม่เรียก EVE API ข้อมูลที่บันทึกใน SQLite เป็น metadata/credential ที่เข้ารหัสและร่องรอยการทำงาน; **ค่าคอนฟิกปัจจุบันของ interface/routing ต้องอ่านจากอุปกรณ์** ไม่ใช่จากรายการ History
 
 ## แผนที่ไฟล์แยกตามหมวดและความสำคัญ
@@ -100,7 +103,7 @@ NetConfig/
 |---|---|---|
 | `run-netconfig.bat` | เปิด backend และ Vite บน Windows; ตรวจบริการเดิมก่อนเปิดซ้ำ | แอปเปิดไม่ได้, port 8000/5175 ชน |
 | `README.md` / `.env.example` | บอก dependency, คำสั่งรัน และตัวแปรที่ต้องเตรียม | ติดตั้งเครื่องใหม่หรือ backend ไม่เริ่ม |
-| `frontend/vite.config.ts` | กำหนด dev port 5173 และ proxy `/nodes`, `/history`, `/health` ไป backend 8000; batch file override UI เป็น 5175 | UI เปิดได้แต่ API ไม่ถึง backend |
+| `frontend/vite.config.ts` | กำหนด dev port 5173 และ proxy `/nodes`, `/history`, `/health` ไป backend 8000; GET ที่รับ HTML บน `/nodes`/`/history` โหลด `index.html` เพื่อเปิดหน้า React; `/nodes` เปิด `ws: true` สำหรับ CLI; batch file override UI เป็น 5175 | รีเฟรชหน้าแล้วเห็น JSON หรือ API/WebSocket ไม่ถึง backend |
 | `backend/config.py::get_settings` | โหลด `NETCONFIG_*` และตรวจ Fernet key; เป็นแหล่งค่ารัน backend | key, DB path หรือ CORS ผิด |
 | `backend/main.py::lifespan` | เตรียม DB ก่อนเปิดบริการ; รวม router และ `/health` | startup ล้มเหลวหรือ endpoint ไม่ปรากฏ |
 | `AGENTS.md` / `docs/RULE.md` / `docs/DECISIONS.md` / `docs/TASKS.md` | ข้อกำหนด, decision และสถานะ checkpoint | ก่อนเปลี่ยนโค้ด/contract |
@@ -114,7 +117,8 @@ NetConfig/
 | `frontend/src/App.tsx` | route `/`, `/nodes/add`, `/nodes/:id`, `/history` และ Sidebar | หน้าใน `pages/` |
 | `frontend/src/pages/NodesPage.tsx::NodesPage` | ดึงรายการ/ค้นหา Node และตรวจสถานะทุก 30 วินาทีขณะเปิดหน้า | `api.ts::listNodes`, `testNodeConnection` |
 | `frontend/src/pages/AddNodePage.tsx::AddNodePage` | wizard, scan popup, test draft และ save หลังผ่าน | `scanSubnet`, `testNodeConnectionDraft`, `createNode` |
-| `frontend/src/pages/NodeDetailPage.tsx::NodeDetailPage` | ศูนย์รวม interface, switch/loopback, routing, Show, Preview/Apply; `PreviewDrawer` แสดงคำสั่ง | ฟังก์ชัน preview/apply/show/capability ใน `api.ts` |
+| `frontend/src/pages/NodeDetailPage.tsx::NodeDetailPage` | ศูนย์รวม interface, switch/loopback, routing, Show, Preview/Apply, CLI และลบ Node; `PreviewDrawer` แสดงคำสั่ง | ฟังก์ชัน preview/apply/show/capability ใน `api.ts` |
+| `frontend/src/components/CliTerminal.tsx` | เปิด WebSocket session, ส่ง CLI ทีละบรรทัด, แสดง prompt/output และ Disconnect | `backend/routers/terminal.py` |
 | `frontend/src/pages/HistoryPage.tsx::HistoryPage` | กรอง Node/สถานะ/เวลา, pagination, เปิดรายละเอียด | `listHistory`, `listHistoryNodes` |
 | `frontend/src/lib/api.ts` | TypeScript request/response contract, Axios และฟังก์ชัน HTTP ทุกงาน; `extractApiError` แปลง error | `backend/routers/*.py` |
 | `frontend/src/lib/queryClient.ts` | ตั้งค่า TanStack Query cache; หน้า invalidates หลัง Apply/Test | หน้าใน `pages/` |
@@ -128,8 +132,10 @@ NetConfig/
 | `backend/models.py` | `NodeCreate`, `InterfaceConfig`, routing payloads, `PreviewResponse`, `ApplyRequest`, `HistoryEntry` ฯลฯ | Backend เป็นจุดตรวจ input จริง; TypeScript ใน `api.ts` ต้องตรงกัน |
 | `backend/routers/nodes.py` | `scan_nodes`, `test_node_connection_draft`, `create_node`, `list_nodes`, `get_node`, `delete_node`, `test_node_connection` | API boundary ของ Node; SQL/การเรียก service อยู่ที่นี่ตามโค้ดปัจจุบัน |
 | `backend/routers/config.py` | endpoint interface/routing; `_persist_preview`, `_load_preview_operation`, `_apply_preview`, `show_command`, `list_history` | ไฟล์รวม flow config หลายชนิดและ History; เริ่มหา endpoint ที่นี่ |
+| `backend/routers/terminal.py` | WebSocket `/nodes/{id}/cli` และ audit ผลต่อคำสั่ง | CLI เป็น session แยกจากฟอร์ม ไม่เก็บข้อความคำสั่ง/output ลง History |
 | `backend/database.py::init_db` / `get_db` | สร้างตารางและเปิด transaction/connection SQLite | ตาราง `nodes`, `operations`, `command_history` |
 | `backend/services/connection.py` | `test_connection`, `build_transport_from_row`, `get_node_lock`, `send_config_commands`, `send_show_command` | ติดต่อ IOS ผ่าน Netmiko; lock ต่อ Node, connection อายุสั้น |
+| `backend/services/terminal.py` | เปิด/ส่งบรรทัด/ปิด Netmiko session ของ CLI | session ค้างเฉพาะขณะเปิดแท็บ; idle timeout แล้วปิด |
 | `backend/services/scanner.py::scan_subnet` | probe TCP 22/23 แบบจำกัด concurrency | ไม่ login หรือบันทึก Node |
 | `backend/services/serial_ports.py::list_serial_ports` | อ่านพอร์ต COM/tty ที่ระบบปฏิบัติการของ backend ตรวจพบ เรียง USB ก่อน | ไม่เปิดพอร์ตและไม่ทดสอบ IOS; ใช้เฉพาะ Add Node |
 | `backend/services/renderer.py` | `render_*`, `hash_payload`, แปลง typed payload เป็น CLI | ไม่รับ raw CLI จาก browser |
@@ -227,7 +233,69 @@ flowchart LR
 
 สำหรับ Switch ยังมี `api.ts::getDeviceCapabilities`/`getInterfaceCapabilities`/`listVlans` → endpoint ชื่อเดียวกันใน `config.py` → `connection.py` อ่าน Show; capability ของเครื่องตรวจ output ที่ไม่รองรับด้วย `parser.py::is_unsupported_ios_command`, capability ของพอร์ตใช้ `parse_switchport_state` และรายการ VLAN ใช้ `parse_show_vlan_brief` ก่อนเปิด control ที่เกี่ยวข้อง ชนิด Node ที่บันทึกเป็น Switch คุมการแสดง UI แต่ backend ตรวจ capability จากอุปกรณ์จริงอีกชั้น
 
-สำหรับ routing: `RoutingPanel` ใน `NodeDetailPage.tsx` เรียก `listStaticRoutes` / `getRipState` / `getOspfState` / `getEigrpState` / `getBgpState` ใน `api.ts` แล้ว endpoint ใน `config.py` อ่าน running-config ผ่าน `send_show_command(s)` และแปลงด้วย `parse_static_routes` / `parse_rip_config` / `parse_ospf_config` / `parse_eigrp_config` / `parse_bgp_config` ผลนี้เป็นค่าที่อุปกรณ์รายงานขณะอ่าน ไม่ใช่ค่าที่ History คาดการณ์
+สำหรับ routing: `RoutingPanel` ใน `NodeDetailPage.tsx` เรียก `listStaticRoutes` / `getRipState` / `getOspfState` / `getEigrpState` / `getBgpState` ใน `api.ts` แล้ว endpoint ใน `config.py` อ่าน running-config ผ่าน `send_show_command(s)` และแปลงด้วย `parse_static_routes` / `parse_rip_config` / `parse_ospf_config` / `parse_eigrp_config` / `parse_bgp_config` ผลนี้เป็นค่าที่อุปกรณ์รายงานขณะอ่าน ไม่ใช่ค่าที่ History คาดการณ์ การอ่าน running-config ไม่ต้องมี IP บน interface; `connection.py::_open_connection` จะลอง `enable` แม้ไม่ได้กรอก secret เพราะ console อาจเข้าได้โดยไม่ถามรหัส ถ้าอ่านไม่สำเร็จ UI แสดง “อ่านไม่ได้” ไม่แทนด้วย Off
+
+### CLI แบบ session ชั่วคราว
+
+```mermaid
+flowchart LR
+    A["CliTerminal.tsx<br/>WebSocket"] --> B["terminal.py::cli_session<br/>lock ต่อ Node"]
+    B --> C["services/terminal.py<br/>Netmiko session"]
+    C --> D["Cisco IOS prompt/output"]
+    B --> E["command_history<br/>ผลและ correlation ID"]
+```
+
+**อธิบายผัง CLI:** เมื่อเปิดแท็บ CLI หน้าเว็บเชื่อม WebSocket ไป backend แล้ว backend เปิด Netmiko session สำหรับ Node นั้น คำสั่งส่งทีละบรรทัดและได้ prompt/output กลับมา session ปิดเมื่อออกจากแท็บ กด Disconnect หรือไม่ได้ใช้งานเกิน 5 นาที History เก็บผลและ correlation ID แต่ไม่เก็บข้อความคำสั่ง/output ที่อาจมีรหัสผ่าน เส้นทางนี้แยกจากฟอร์ม Preview/Apply และคำสั่งมีผลทันที
+
+#### ลำดับการทำงานและข้อมูลที่ส่งจริง
+
+```mermaid
+sequenceDiagram
+    actor User as ผู้ใช้
+    participant UI as CliTerminal.tsx
+    participant WS as terminal.py::cli_session
+    participant DB as SQLite
+    participant Net as services/terminal.py + Netmiko
+    participant IOS as Cisco IOS
+    User->>UI: เปิดแท็บ CLI
+    UI->>WS: WebSocket /nodes/{node_id}/cli
+    WS->>DB: อ่าน Node/transport
+    WS->>WS: ขอ lock ต่อ Node (รอได้ 30 วินาที)
+    WS->>Net: open_terminal ใน threadpool
+    Net->>IOS: เปิด SSH/Telnet/Serial
+    WS-->>UI: ready + prompt
+    User->>UI: พิมพ์หนึ่งบรรทัด แล้วกด Enter/Send
+    UI->>WS: {"command":"..."}
+    WS->>WS: ตรวจหนึ่งบรรทัด ไม่ว่าง ไม่เกิน 256 ตัวอักษร
+    WS->>Net: send_terminal_line ใน threadpool
+    Net->>IOS: send_command_timing
+    IOS-->>Net: output/prompt
+    Net-->>WS: output ที่ผ่าน redact_text + prompt
+    WS->>DB: บันทึกผล/correlation ID ใน command_history
+    WS-->>UI: result + output/prompt/status
+    UI-->>User: แสดงผลและ prompt ใหม่
+    User->>UI: Disconnect หรือออกจากแท็บ
+    UI->>WS: disconnect/ปิด WebSocket
+    WS->>Net: close_terminal ใน finally
+    WS->>WS: ปล่อย lock ต่อ Node
+```
+
+**อธิบายผังลำดับ CLI:** `NodeDetailPage.tsx` mount `CliTerminal` เฉพาะตอนเปิดแท็บ CLI; browser สร้าง `ws://` หรือ `wss://` ตามหน้าเว็บ และใช้ host เดียวกับ UI. ในโหมด Vite, `vite.config.ts` proxy เส้นทาง `/nodes` รวม WebSocket ไป FastAPI ที่พอร์ต 8000. `backend/main.py` ลงทะเบียน router นี้ไว้ ส่วน `terminal.py::cli_session` อ่าน Node จาก SQLite, รอ lock ต่อ Node, สร้าง transport จากข้อมูลที่บันทึก แล้วเรียก `services/terminal.py::open_terminal` ผ่าน threadpool เพราะ Netmiko เป็น blocking. เมื่ออ่าน prompt ได้จึงส่งข้อความ `ready` กลับมา; ถ้าเปิดไม่ได้ UI แสดง error และให้เชื่อมใหม่
+
+หนึ่ง WebSocket ใช้หนึ่ง Netmiko connection ตลอดช่วงเปิด CLI. Frontend ส่ง JSON `{ "command": "..." }` ทีละบรรทัดและรอผลก่อนให้ส่งบรรทัดถัดไป Backend ตรวจความยาว/รูปแบบ แล้ว `send_terminal_line` ใช้ `send_command_timing` (รอผลคำสั่งได้สูงสุด 20 วินาที) และอ่าน prompt ใหม่; ถ้า output จบด้วย `Password:` จะส่งสถานะให้ช่องกรอกเป็นชนิด password. Output ผ่าน `redact_text` ก่อนตอบ UI และคำสั่งที่ดูเหมือนมี password/secret หรือเป็นคำตอบของ password prompt จะไม่ถูก echo/เก็บในประวัติคำสั่งของหน้าจอ. คีย์ ↑↓ เรียกคำสั่งที่เคยพิมพ์ในแท็บ, Esc ล้างช่องพิมพ์, Copy/Clear จัดการเฉพาะข้อความที่แสดง ไม่สั่ง IOS
+
+หลังส่งหนึ่งบรรทัด `cli_session` ตรวจรูปแบบ error ของ IOS เพื่อกำหนด `success`/`failed`, สร้าง correlation ID และเขียน `command_history` ก่อนส่ง `result` กลับมา. History เก็บสถานะและ Node แต่แทนข้อความคำสั่ง/output ด้วย placeholder; หน้า History จึงใช้ตรวจผลย้อนหลังได้ แต่ใช้ย้อนดูข้อความ CLI ไม่ได้. การตรวจ error นี้อาศัยข้อความตอบกลับที่รู้จัก ไม่ใช่การรับประกันว่าคำสั่งเปลี่ยน config ถูกต้องทุกมิติ; หากต้องตรวจ state ให้ใช้ Show หรืออ่านค่าอุปกรณ์จริงอีกครั้ง
+
+การกด Disconnect, เปลี่ยนแท็บ, ปิดหน้า, WebSocket หลุด หรือไม่มีข้อความเข้ามา 300 วินาที จะจบ session; `finally` ปิด Netmiko connection และปล่อย lock. ระหว่างเปิด CLI หน้า Node Detail หยุด health polling และปิดปุ่ม Reconnect/Save Config/Delete Node ของส่วนหัวเพื่อลดงานที่ชน lock. สถานะ Connected ในแถบ CLI หมายถึง WebSocket session นี้พร้อมใช้ ส่วนสถานะ Node ใน Dashboard เป็นผลตรวจ connection ครั้งล่าสุดคนละค่า. CLI ส่งคำสั่งทันทีโดยไม่มี Preview/Apply และไม่สั่ง `write memory` ให้อัตโนมัติ; หากต้องบันทึก startup-config ให้ใช้ Save Config แยกต่างหาก
+
+#### จุดเริ่มตรวจเมื่อ CLI ไม่ทำงาน
+
+| อาการ | ไล่ไฟล์ / จุดตรวจ |
+|---|---|
+| เปิดแท็บแล้วไม่ Connected | `CliTerminal.tsx` (WebSocket URL/error) → `vite.config.ts` (`/nodes` ต้อง proxy WebSocket) → `main.py` (ลงทะเบียน router) → `routers/terminal.py::cli_session` (Node, lock, open) → `services/terminal.py::open_terminal` |
+| Connected แต่ส่งแล้วไม่เห็นผล | `CliTerminal.tsx::send`/`onmessage` → `routers/terminal.py::cli_session` (validation/error) → `services/terminal.py::send_terminal_line` → IOS prompt/output |
+| อีกงานบน Node ติดว่ากำลังใช้งาน | `routers/terminal.py::cli_session` ถือ `connection.py::get_node_lock` ตลอด session; ออกจากแท็บหรือกด Disconnect แล้วตรวจว่า `finally` ปิด connection/ปล่อย lock |
+| หน้า History มีผลแต่ไม่มีข้อความ CLI | `routers/terminal.py::_record_cli_result` บันทึกเพียงผลและ correlation ID ตาม ADR-037; เป็นพฤติกรรมที่ตั้งใจไว้ |
 
 ### 4. Preview → Apply → History (เส้นทางร่วมของ config ทุกชนิด)
 
