@@ -177,6 +177,19 @@ known P0 security/correctness issue.
 **Checkpoint P5:** เพิ่ม/ลบ Loopback ได้ และตั้ง physical/SVI บน L2/L3 ได้ผ่าน preview →
 explicit apply → history โดยไม่ส่ง IPv4 ลง switchport L2 โดยไม่ตั้งโหมดให้ถูกต้อง.
 
+## UI Redesign — Device Index (2026-09-30)
+
+- [x] ยืนยันงานหลัก: เพิ่ม Node → Interface/Routing → ตรวจผลและ History — `PRODUCT.md`
+- [x] ผู้ใช้เลือก Device Index และตัดคำแนะนำขั้นตอนด้านล่างภาพ — `.impeccable/mocks/decision/assigned-v2.png`, ADR-042
+- [x] Implement หน้า Nodes และ shared navigation ตามภาพที่เลือก — owner: Codex; อ่าน `Design/DESIGN.md`, `Design/index.html`, `NodesPage.tsx`, `App.tsx` และ shared components แล้ว; API/NodeResponse ไม่เปลี่ยน. Input คือรายการ Node + health result; output คือ inventory และ navigation. คง validation/confirmation เดิม; error/loading/empty/search-no-match มี code path ชัดเจน
+- [x] Impeccable plan review ก่อนเขียน UI — session `e1cac40fa171b0de2e20de61436ab534474ac251f4f6d6554d809a0ef27368e1`; receipt approved จากผู้ใช้ และ `plates → hero` ผ่าน; ไม่มี raster assets ที่ต้องผลิต
+- [x] ปรับ `Design/index.html` พร้อม React; ตรวจ Cards/Table, ค้นหา, Configure, Add Node, keyboard และ search/status-empty ที่ desktop/tablet/mobile — หลักฐาน `docs/UI_REDESIGN_QA.md`; loading/backend error/no Node ตรวจจากโค้ด ไม่อ้างว่าทดสอบ runtime แล้ว
+- [x] Frontend build/lint ผ่าน (warnings เดิม), bounded visual review เก็บภาพแล้ว; finish reviewer ตรวจขอบเขต Nodes/เมนู และบันทึก design system จากโค้ดจริงใน `DESIGN.md` / `.impeccable/design.json` แล้ว — ไม่ใช่การรับรอง strict comp gate หรือการกู้ Rtest
+- [!] กู้ Rtest COM3 ที่ถูกลบโดยไม่ตั้งใจระหว่างทดสอบ native confirmation — แจ้งผู้ใช้และตรวจ backup แล้ว; รอยืนยันค่าเดิมก่อนเพิ่มกลับโดยไม่ข้าม Test Connection
+- [ ] Strict automated comp gate: ยังอยู่ hero; final score 78% แต่ยังมี hard blockers จึงไม่ประกาศว่า gate ผ่าน
+
+**Checkpoint UI:** ยังไม่ผ่าน; production UI เปลี่ยนแล้วและ build/การตรวจหลักผ่าน แต่ strict comp gate และเหตุการณ์ Rtest ยังไม่ปิด.
+
 ## หลังผ่าน Assignment — Backlog แยกจาก Core
 
 ### P1: ความปลอดภัยและ Operations

@@ -1,0 +1,364 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-30T00:00:00+07:00",
+  "title": "Design System: NetConfig — Device Index",
+  "extensions": {
+    "colorMeta": {
+      "accent": {
+        "role": "primary",
+        "displayName": "Teal งานตั้งค่า",
+        "tonalRamp": [
+          "oklch(0.15 0.0893 229.20)",
+          "oklch(0.26 0.0893 229.20)",
+          "oklch(0.38 0.0893 229.20)",
+          "oklch(0.49 0.0893 229.20)",
+          "oklch(0.61 0.0893 229.20)",
+          "oklch(0.72 0.0893 229.20)",
+          "oklch(0.84 0.0893 229.20)",
+          "oklch(0.95 0.0893 229.20)"
+        ]
+      },
+      "accent-hover": {
+        "role": "primary",
+        "displayName": "Teal hover",
+        "tonalRamp": [
+          "oklch(0.15 0.0751 229.17)",
+          "oklch(0.26 0.0751 229.17)",
+          "oklch(0.38 0.0751 229.17)",
+          "oklch(0.49 0.0751 229.17)",
+          "oklch(0.61 0.0751 229.17)",
+          "oklch(0.72 0.0751 229.17)",
+          "oklch(0.84 0.0751 229.17)",
+          "oklch(0.95 0.0751 229.17)"
+        ]
+      },
+      "graphite": {
+        "role": "neutral",
+        "displayName": "Graphite เมนู",
+        "tonalRamp": [
+          "oklch(0.15 0.0336 257.67)",
+          "oklch(0.26 0.0336 257.67)",
+          "oklch(0.38 0.0336 257.67)",
+          "oklch(0.49 0.0336 257.67)",
+          "oklch(0.61 0.0336 257.67)",
+          "oklch(0.72 0.0336 257.67)",
+          "oklch(0.84 0.0336 257.67)",
+          "oklch(0.95 0.0336 257.67)"
+        ]
+      },
+      "nav-text": {
+        "role": "neutral",
+        "displayName": "ข้อความเมนู",
+        "tonalRamp": [
+          "oklch(0.15 0.0190 243.00)",
+          "oklch(0.26 0.0190 243.00)",
+          "oklch(0.38 0.0190 243.00)",
+          "oklch(0.49 0.0190 243.00)",
+          "oklch(0.61 0.0190 243.00)",
+          "oklch(0.72 0.0190 243.00)",
+          "oklch(0.84 0.0190 243.00)",
+          "oklch(0.95 0.0190 243.00)"
+        ]
+      },
+      "nav-hover": {
+        "role": "neutral",
+        "displayName": "Graphite hover",
+        "tonalRamp": [
+          "oklch(0.15 0.0365 250.43)",
+          "oklch(0.26 0.0365 250.43)",
+          "oklch(0.38 0.0365 250.43)",
+          "oklch(0.49 0.0365 250.43)",
+          "oklch(0.61 0.0365 250.43)",
+          "oklch(0.72 0.0365 250.43)",
+          "oklch(0.84 0.0365 250.43)",
+          "oklch(0.95 0.0365 250.43)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "หมึกข้อมูล",
+        "tonalRamp": [
+          "oklch(0.15 0.0246 246.40)",
+          "oklch(0.26 0.0246 246.40)",
+          "oklch(0.38 0.0246 246.40)",
+          "oklch(0.49 0.0246 246.40)",
+          "oklch(0.61 0.0246 246.40)",
+          "oklch(0.72 0.0246 246.40)",
+          "oklch(0.84 0.0246 246.40)",
+          "oklch(0.95 0.0246 246.40)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "ข้อความรอง",
+        "tonalRamp": [
+          "oklch(0.15 0.0372 249.94)",
+          "oklch(0.26 0.0372 249.94)",
+          "oklch(0.38 0.0372 249.94)",
+          "oklch(0.49 0.0372 249.94)",
+          "oklch(0.61 0.0372 249.94)",
+          "oklch(0.72 0.0372 249.94)",
+          "oklch(0.84 0.0372 249.94)",
+          "oklch(0.95 0.0372 249.94)"
+        ]
+      },
+      "boundary": {
+        "role": "neutral",
+        "displayName": "ขอบเทาเย็น",
+        "tonalRamp": [
+          "oklch(0.15 0.0122 247.96)",
+          "oklch(0.26 0.0122 247.96)",
+          "oklch(0.38 0.0122 247.96)",
+          "oklch(0.49 0.0122 247.96)",
+          "oklch(0.61 0.0122 247.96)",
+          "oklch(0.72 0.0122 247.96)",
+          "oklch(0.84 0.0122 247.96)",
+          "oklch(0.95 0.0122 247.96)"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "พื้นที่ขาว",
+        "tonalRamp": [
+          "oklch(0.15 0.0000 89.88)",
+          "oklch(0.26 0.0000 89.88)",
+          "oklch(0.38 0.0000 89.88)",
+          "oklch(0.49 0.0000 89.88)",
+          "oklch(0.61 0.0000 89.88)",
+          "oklch(0.72 0.0000 89.88)",
+          "oklch(0.84 0.0000 89.88)",
+          "oklch(0.95 0.0000 89.88)"
+        ]
+      },
+      "surface-hover": {
+        "role": "neutral",
+        "displayName": "พื้น hover รอง",
+        "tonalRamp": [
+          "oklch(0.15 0.0042 236.50)",
+          "oklch(0.26 0.0042 236.50)",
+          "oklch(0.38 0.0042 236.50)",
+          "oklch(0.49 0.0042 236.50)",
+          "oklch(0.61 0.0042 236.50)",
+          "oklch(0.72 0.0042 236.50)",
+          "oklch(0.84 0.0042 236.50)",
+          "oklch(0.95 0.0042 236.50)"
+        ]
+      },
+      "selected": {
+        "role": "primary",
+        "displayName": "พื้นเลือกมุมมอง",
+        "tonalRamp": [
+          "oklch(0.15 0.0138 219.62)",
+          "oklch(0.26 0.0138 219.62)",
+          "oklch(0.38 0.0138 219.62)",
+          "oklch(0.49 0.0138 219.62)",
+          "oklch(0.61 0.0138 219.62)",
+          "oklch(0.72 0.0138 219.62)",
+          "oklch(0.84 0.0138 219.62)",
+          "oklch(0.95 0.0138 219.62)"
+        ]
+      },
+      "connected": {
+        "role": "status",
+        "displayName": "Connected",
+        "tonalRamp": [
+          "oklch(0.15 0.1274 152.61)",
+          "oklch(0.26 0.1274 152.61)",
+          "oklch(0.38 0.1274 152.61)",
+          "oklch(0.49 0.1274 152.61)",
+          "oklch(0.61 0.1274 152.61)",
+          "oklch(0.72 0.1274 152.61)",
+          "oklch(0.84 0.1274 152.61)",
+          "oklch(0.95 0.1274 152.61)"
+        ]
+      },
+      "unreachable": {
+        "role": "status",
+        "displayName": "Unreachable",
+        "tonalRamp": [
+          "oklch(0.15 0.1793 20.15)",
+          "oklch(0.26 0.1793 20.15)",
+          "oklch(0.38 0.1793 20.15)",
+          "oklch(0.49 0.1793 20.15)",
+          "oklch(0.61 0.1793 20.15)",
+          "oklch(0.72 0.1793 20.15)",
+          "oklch(0.84 0.1793 20.15)",
+          "oklch(0.95 0.1793 20.15)"
+        ]
+      },
+      "checking": {
+        "role": "status",
+        "displayName": "Checking",
+        "tonalRamp": [
+          "oklch(0.15 0.1090 66.21)",
+          "oklch(0.26 0.1090 66.21)",
+          "oklch(0.38 0.1090 66.21)",
+          "oklch(0.49 0.1090 66.21)",
+          "oklch(0.61 0.1090 66.21)",
+          "oklch(0.72 0.1090 66.21)",
+          "oklch(0.84 0.1090 66.21)",
+          "oklch(0.95 0.1090 66.21)"
+        ]
+      },
+      "focus": {
+        "role": "primary",
+        "displayName": "Focus ในเนื้อหา",
+        "tonalRamp": [
+          "oklch(0.15 0.0985 221.04)",
+          "oklch(0.26 0.0985 221.04)",
+          "oklch(0.38 0.0985 221.04)",
+          "oklch(0.49 0.0985 221.04)",
+          "oklch(0.61 0.0985 221.04)",
+          "oklch(0.72 0.0985 221.04)",
+          "oklch(0.84 0.0985 221.04)",
+          "oklch(0.95 0.0985 221.04)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "หัวข้อ Nodes",
+        "purpose": "Ubuntu Sans 700 เฉพาะหัวข้อรายการ; tablet 38px และหน้าจอแคบ 32px"
+      },
+      "brand": {
+        "displayName": "NetConfig",
+        "purpose": "Ubuntu Sans 700 สำหรับ brand; NC เมื่อย่อ"
+      },
+      "title": {
+        "displayName": "ชื่ออุปกรณ์",
+        "purpose": "Noto Sans Thai 600 สำหรับ identity"
+      },
+      "body": {
+        "displayName": "ข้อความไทย",
+        "purpose": "Body เดิมของโครงการ"
+      },
+      "label": {
+        "displayName": "Action label",
+        "purpose": "Primary/secondary controls"
+      },
+      "endpoint": {
+        "displayName": "Management endpoint",
+        "purpose": "IP/Console port ในตาราง; Cards 14px"
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "sidebar-transform",
+        "value": "transform 180ms ease-out",
+        "purpose": "เปิด/ปิด overlay navigation; ไม่ animate width หรือ margin"
+      },
+      {
+        "name": "loading-spinner",
+        "value": "spin 1s linear infinite",
+        "purpose": "แสดงกำลังโหลด; ปิด animation เมื่อ prefers-reduced-motion: reduce"
+      },
+      {
+        "name": "reduced-motion",
+        "value": "none",
+        "purpose": "ปิด sidebar transition และ loading animation เมื่อผู้ใช้เลือก reduced motion"
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "narrow-max",
+        "value": "600px"
+      },
+      {
+        "name": "tablet-max",
+        "value": "1024px"
+      },
+      {
+        "name": "compact-desktop-max",
+        "value": "1279px"
+      },
+      {
+        "name": "wide-desktop-min",
+        "value": "1536px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary action",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Action teal สำหรับ Add Node และ Configure",
+      "html": "<button type=\"button\" class=\"ds-primary\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 5v14M5 12h14\"/></svg>Add Node</button>",
+      "css": ".ds-primary{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:44px;padding:10px 18px;border:0;border-radius:6px;background:var(--index-accent,#086281);color:white;font-family:'Noto Sans Thai','IBM Plex Sans Thai',system-ui,sans-serif;font-size:15px;font-weight:600;line-height:1.6;cursor:pointer;}.ds-primary:hover{background:#064d66}.ds-primary:focus-visible{outline:2px solid var(--index-focus,#15829e);outline-offset:4px;}"
+    },
+    {
+      "name": "Inventory search",
+      "kind": "input",
+      "refersTo": "search",
+      "description": "Search สูง 58px พร้อม SVG และ focus ที่เห็นได้",
+      "html": "<div class=\"ds-search\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"11\" cy=\"11\" r=\"8\"/><path d=\"m21 21-4.35-4.35\"/></svg><input type=\"search\" placeholder=\"ค้นหาชื่ออุปกรณ์หรือ IP\" aria-label=\"ค้นหาชื่ออุปกรณ์หรือ IP\"></div>",
+      "css": ".ds-search{position:relative;max-width:710px;color:var(--index-ink,#18232d)}.ds-search>svg{position:absolute;top:50%;left:16px;transform:translateY(-50%);color:var(--index-muted,#596b7e);pointer-events:none}.ds-search input{box-sizing:border-box;width:100%;height:58px;padding:12px 16px 12px 48px;border:1px solid var(--index-border,#dce3ea);border-radius:6px;background:white;color:var(--index-ink,#18232d);font-family:'Noto Sans Thai','IBM Plex Sans Thai',system-ui,sans-serif;font-size:18px;line-height:1.6;caret-color:var(--index-accent,#086281)}.ds-search input::placeholder{color:var(--index-muted,#596b7e);opacity:1}.ds-search input:focus-visible{outline:2px solid var(--index-focus,#15829e);outline-offset:4px;}"
+    },
+    {
+      "name": "Graphite navigation",
+      "kind": "nav",
+      "refersTo": "nav-link-active",
+      "description": "เมนู active teal และ hover graphite สำหรับ shared navigation",
+      "html": "<nav class=\"ds-nav\" aria-label=\"เมนูตัวอย่าง\"><a class=\"ds-nav-link ds-nav-active\" href=\"#nodes\" aria-current=\"page\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect x=\"3\" y=\"3\" width=\"7\" height=\"7\"/><rect x=\"14\" y=\"3\" width=\"7\" height=\"7\"/><rect x=\"3\" y=\"14\" width=\"7\" height=\"7\"/><rect x=\"14\" y=\"14\" width=\"7\" height=\"7\"/></svg>Nodes</a><a class=\"ds-nav-link\" href=\"#history\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M3 12a9 9 0 1 0 3-6.7M3 3v6h6M12 7v5l4 2\"/></svg>History</a></nav>",
+      "css": ".ds-nav{display:flex;flex-direction:column;gap:12px;width:210px;padding:9px 12px;background:#1d2838;color:#c9d5df}.ds-nav-link{display:flex;align-items:center;gap:18px;min-height:52px;padding:10px 16px;border-radius:6px;color:inherit;text-decoration:none;font-family:'Noto Sans Thai','IBM Plex Sans Thai',system-ui,sans-serif;font-size:18px;font-weight:500;line-height:1.6}.ds-nav-link:hover{background:#2b3b4c;color:white}.ds-nav-link.ds-nav-active{background:var(--index-accent,#086281);color:white}.ds-nav-link:focus-visible{outline:2px solid #7ed9ed;outline-offset:4px}"
+    },
+    {
+      "name": "View selection",
+      "kind": "chip",
+      "refersTo": "view-selected",
+      "description": "Segmented Table/Cards มี selected, hover และ focus states",
+      "html": "<div class=\"ds-views\" role=\"group\" aria-label=\"มุมมองตัวอย่าง\"><button type=\"button\" aria-pressed=\"true\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01\"/></svg>Table</button><button type=\"button\" aria-pressed=\"false\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect x=\"3\" y=\"3\" width=\"7\" height=\"7\"/><rect x=\"14\" y=\"3\" width=\"7\" height=\"7\"/><rect x=\"3\" y=\"14\" width=\"7\" height=\"7\"/><rect x=\"14\" y=\"14\" width=\"7\" height=\"7\"/></svg>Cards</button></div>",
+      "css": ".ds-views{display:inline-flex;border:1px solid var(--index-border,#dce3ea);border-radius:6px;overflow:hidden}.ds-views button{display:flex;align-items:center;justify-content:center;gap:9px;height:52px;padding:12px 21px;border:0;background:white;color:var(--index-muted,#596b7e);font-family:'Noto Sans Thai','IBM Plex Sans Thai',system-ui,sans-serif;font-size:15px;line-height:1.6;cursor:pointer}.ds-views button+button{border-left:1px solid var(--index-border,#dce3ea)}.ds-views button:hover{background:#edf5f7}.ds-views button[aria-pressed=true]{background:#e7f3f7;color:var(--index-accent,#086281);font-weight:600}.ds-views button:focus-visible{outline:2px solid #15829e;outline-offset:-4px}"
+    },
+    {
+      "name": "Device card",
+      "kind": "card",
+      "refersTo": "device-card",
+      "description": "Cards view ตัวอย่าง identity และ endpoint; ข้อมูลสาธิตระบุชัด",
+      "html": "<article class=\"ds-card\"><div><a class=\"ds-card-name\" href=\"#example-node\" title=\"Node ตัวอย่าง\">Node ตัวอย่าง</a><div class=\"ds-card-kind\">Router · ข้อมูลสาธิต</div></div><div class=\"ds-card-endpoint\">192.0.2.1 <span>SSH</span></div><span class=\"ds-card-status\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01\"/></svg>Unknown</span><a class=\"ds-card-configure\" href=\"#example-node\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 12h14m-6-6 6 6-6 6\"/></svg>Configure</a></article>",
+      "css": ".ds-card{display:flex;flex-direction:column;gap:24px;padding:24px;border:1px solid var(--index-border,#dce3ea);border-radius:12px;background:white;color:var(--index-ink,#18232d);font-family:'Noto Sans Thai','IBM Plex Sans Thai',system-ui,sans-serif;line-height:1.6}.ds-card-name{color:inherit;font-size:20px;font-weight:600;text-decoration:none;text-underline-offset:4px}.ds-card-name:hover{color:var(--index-accent,#086281);text-decoration:underline}.ds-card-name:focus-visible{outline:2px solid var(--index-focus,#15829e);outline-offset:4px;}.ds-card-kind{font-size:12px;color:var(--index-muted,#596b7e)}.ds-card-endpoint{display:flex;justify-content:space-between;gap:12px;font-family:'JetBrains Mono',monospace;font-size:14px;font-variant-numeric:tabular-nums}.ds-card-endpoint span{font:500 13px 'JetBrains Mono',monospace}.ds-card-status{display:inline-flex;align-items:center;gap:9px;color:var(--index-muted,#596b7e);font-size:14px;font-weight:500}.ds-card-status svg{width:21px;height:21px}.ds-card-configure{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:44px;padding:10px 18px;border:0;border-radius:6px;background:var(--index-accent,#086281);color:white;font-family:'Noto Sans Thai','IBM Plex Sans Thai',system-ui,sans-serif;font-size:15px;font-weight:600;line-height:1.6;cursor:pointer;padding:10px 12px;font-size:14px;text-decoration:none;align-self:flex-start}.ds-card-configure:hover{background:#064d66}.ds-card-configure:focus-visible{outline:2px solid var(--index-focus,#15829e);outline-offset:4px;}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Device Index",
+    "overview": "Device Index ใช้บรรยากาศสารบัญอุปกรณ์ที่อ่านง่าย: เมนู graphite รองรับพื้นที่ทำงานสีขาว เส้นแบ่งสีเทาเย็น และ action สี teal เพื่อให้ผู้ใช้ระบุอุปกรณ์จริงและเปิดงานตั้งค่าได้ทันที รูปทรงเรียบ มุมโค้งน้อย และตัวอักษรที่แยกชื่ออุปกรณ์ออกจาก endpoint ทำให้ข้อมูลเป็นจุดเด่นของหน้าจอ\n\nเอกสารนี้ถอดค่าจาก frontend/src/device-index.css, NodesPage.tsx และ shared navigation ที่ implement ตาม ADR-042 แล้ว ใช้เฉพาะหน้า Nodes และโครง navigation ที่ร่วมกัน; frontend/src/index.css ยังเป็น baseline ของ Add Node, Node Detail, History และ form/config เดิม สัญญาหน้าจอและ interaction ทั้งระบบยังอ้างอิง Design/DESIGN.md; เอกสาร root นี้ไม่ได้อนุมัติการย้าย palette หรือ workflow ของหน้าที่เหลือ\n\nสถานะการส่งมอบและหลักฐานตรวจอยู่ใน docs/UI_REDESIGN_QA.md และ docs/TASKS.md การบันทึก design system ไม่ใช่การรับรองว่า checkpoint ผ่าน; strict comp gate และเหตุการณ์ Rtest ยังไม่ปิด",
+    "keyCharacteristics": [
+      "พื้นที่ทำงานขาวและ navigation graphite",
+      "Action teal พร้อมเส้นแบ่งเทาเย็น",
+      "หัวข้อ Ubuntu Sans, body ภาษาไทย และ endpoint monospace",
+      "พื้นผิวเรียบและสถานะที่มีสี ไอคอน และข้อความ"
+    ],
+    "rules": [
+      {
+        "name": "The Scoped World Rule",
+        "body": "ใช้ token ชุดนี้เฉพาะ Nodes และ shared navigation; การย้ายหน้าฟอร์มอื่นต้องมีขอบเขตและ Design decision ของงานนั้น",
+        "section": "colors"
+      },
+      {
+        "name": "The Role Pairing Rule",
+        "body": "Ubuntu Sans ใช้กับ brand และหัวข้อ Nodes; body/label ใช้ฟอนต์ไทยเดิม และ endpoint/transport ใช้ JetBrains Mono",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat Work Plane Rule",
+        "body": "พื้นที่รายการและ Cards ไม่ใช้เงา; hierarchy เกิดจากขอบ เส้นแบ่ง สีพื้น และช่องว่าง",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do รักษาขอบเขต Nodes/shared navigation และอ่าน Design/DESIGN.md ก่อนขยายไปหน้าฟอร์ม",
+      "Do ใช้สีร่วมกับ SVG icon และข้อความกับทุกสถานะ",
+      "Do ทำให้ focus มองเห็น และเปิด Configure ผ่าน link ที่ใช้ Enter ได้",
+      "Do ใช้ monospace กับ endpoint/transport และข้อความไทยที่ตรงไปตรงมากับ guidance/error",
+      "Do ให้สี hover/focus ช่วยระบุแถวที่กำลังใช้งานโดยไม่สร้างสถานะเลือกอุปกรณ์ขึ้นเอง"
+    ],
+    "donts": [
+      "Don't นำค่า baseline ของ form/config ไปเปลี่ยนเป็น palette ชุดนี้โดยอาศัยเอกสาร root เพียงอย่างเดียว",
+      "Don't ใช้ mock data หรือสรุป Connected ว่าเป็น session ที่เปิดอยู่ตลอดเวลา",
+      "Don't เพิ่มเงาหรือ gradient เพื่อทำให้ inventory ดูเป็น marketing dashboard",
+      "Don't ใช้ emoji หรือ icon แบบตัวอักษรแทน SVG",
+      "Don't สรุปว่า QA/checkpoint ผ่านจากการมีเอกสารและ snippets"
+    ]
+  }
+}

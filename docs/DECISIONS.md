@@ -53,6 +53,16 @@
 
 ## Contract การทำงานร่วมกัน
 
+### ADR-042 — Device Index redesign (อนุมัติแนวทาง 2026-09-30)
+
+ผู้ใช้เลือก Device Index และให้ implement ตามภาพที่แก้แล้ว โดยไม่แสดงแผง
+“Configure a node”/ขั้นตอนด้านล่างรายการ. รอบแรกมีขอบเขตหน้า Nodes และ shared
+navigation: ตารางเริ่มต้น, Cards เป็นทางเลือก, Configure เป็น action หลัก, Delete
+แยกและยังยืนยันชื่อ Node. ใช้ข้อมูล/สถานะจริง ไม่ใช้ค่าหรือ caption ของ mockup.
+คง API, health check 30 วินาที, Add Node wizard, Preview/Apply, History และ Save Config.
+ภาพอ้างอิง `.impeccable/mocks/decision/assigned-v2.png`; owner: Codex.
+สถานะ implementation และหลักฐาน QA ติดตามใน `TASKS.md` ไม่ถือว่าการเลือกภาพคือทำเสร็จ.
+
 ### ภาวะของ configuration operation
 
 ```

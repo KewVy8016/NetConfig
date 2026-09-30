@@ -1,0 +1,8 @@
+{
+  "prompt": "Use case: precise-object-edit. Asset type: NetConfig desktop UI design comp. Input image is the EDIT TARGET, not inspiration. Change ONLY this: remove the entire bottom instructional panel titled 'Configure a node', its description, and all five numbered workflow steps/icons/labels. It is the panel below the device table, approximately lower26% of the canvas. Replace that panel with the same clean plain white main-workspace background, leaving a quiet empty area below the inventory. Do not crop or resize the canvas; keep sidebar spanning full height. Preserve everything above the bottom panel EXACTLY: NetConfig logo, sidebar links, Nodes heading, description, Add Node button, search box, Table/Cards controls, design-preview label, all table headers, device names, addresses, transport strings, red Unreachable statuses, Configure buttons, delete buttons, selected SW1 row, borders, typography, colors, alignment and positions. Do not add any replacement content or illustration. Do not invent metrics or additional controls. The user wants the main interface without the lower how-to workflow guide.",
+  "tool": "image_gen__imagegen",
+  "sourceImage": ".impeccable/mocks/decision/assigned.png",
+  "purpose": "selected direction refinement",
+  "approved": true,
+  "userRequest": "Remove bottom instructional panel only."
+}

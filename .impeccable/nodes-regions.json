@@ -1,0 +1,506 @@
+{
+  "regions": [
+    {"id":"sidebar-quiet-field","kind":"chrome","pixelBox":{"x":0,"y":250,"w":267,"h":480},"note":"Undivided quiet navigation background and its separation from the white work plane"},
+    {"id":"main-header-layout","kind":"chrome","container":true,"pixelBox":{"x":234,"y":0,"w":1372,"h":267},"note":"Main header, help and toolbar layout container"},
+    {"id":"table-row-one","kind":"chrome","container":true,"pixelBox":{"x":267,"y":325,"w":1317,"h":90},"note":"First device row with fine border"},
+    {"id":"table-row-two","kind":"chrome","container":true,"pixelBox":{"x":267,"y":415,"w":1317,"h":90},"note":"Selected or focused device row with flat pale tint"},
+    {"id":"table-row-three","kind":"chrome","container":true,"pixelBox":{"x":267,"y":505,"w":1317,"h":90},"note":"Third device row with fine border"},
+    {"id":"table-row-four","kind":"chrome","container":true,"pixelBox":{"x":267,"y":595,"w":1317,"h":95},"note":"Fourth device row and lower table boundary"},
+    {
+      "id": "sidebar",
+      "kind": "chrome",
+      "container": true,
+      "pixelBox": {
+        "x": 0,
+        "y": 0,
+        "w": 234,
+        "h": 979
+      },
+      "note": "Flat graphite navigation background"
+    },
+    {
+      "id": "brand",
+      "kind": "text",
+      "pixelBox": {
+        "x": 26,
+        "y": 24,
+        "w": 170,
+        "h": 38
+      },
+      "note": "NetConfig wordmark"
+    },
+    {
+      "id": "nav-nodes",
+      "kind": "control",
+      "pixelBox": {
+        "x": 12,
+        "y": 95,
+        "w": 211,
+        "h": 52
+      },
+      "note": "Selected Nodes link with small icon"
+    },
+    {
+      "id": "nav-history",
+      "kind": "control",
+      "pixelBox": {
+        "x": 26,
+        "y": 163,
+        "w": 159,
+        "h": 41
+      },
+      "note": "History navigation link with small icon"
+    },
+    {
+      "id": "breadcrumb",
+      "kind": "text",
+      "pixelBox": {
+        "x": 273,
+        "y": 23,
+        "w": 160,
+        "h": 28
+      },
+      "note": "NetConfig breadcrumb and Nodes label"
+    },
+    {
+      "id": "nodes-heading",
+      "kind": "text",
+      "pixelBox": {
+        "x": 273,
+        "y": 73,
+        "w": 154,
+        "h": 49
+      },
+      "note": "Nodes heading"
+    },
+    {
+      "id": "page-help",
+      "kind": "text",
+      "pixelBox": {
+        "x": 273,
+        "y": 127,
+        "w": 985,
+        "h": 30
+      },
+      "note": "Concise explanation of device management"
+    },
+    {
+      "id": "add-node",
+      "kind": "control",
+      "pixelBox": {
+        "x": 1399,
+        "y": 63,
+        "w": 185,
+        "h": 55
+      },
+      "note": "Add Node primary button"
+    },
+    {
+      "id": "search",
+      "kind": "control",
+      "pixelBox": {
+        "x": 269,
+        "y": 189,
+        "w": 710,
+        "h": 59
+      },
+      "note": "Search input with small icon"
+    },
+    {
+      "id": "views",
+      "kind": "control",
+      "pixelBox": {
+        "x": 997,
+        "y": 189,
+        "w": 263,
+        "h": 59
+      },
+      "note": "Table and Cards segmented buttons"
+    },
+    {
+      "id": "preview-note",
+      "kind": "text",
+      "pixelBox": {
+        "x": 1310,
+        "y": 200,
+        "w": 267,
+        "h": 30
+      },
+      "note": "Design preview example-data caption; not live application content"
+    },
+    {
+      "id": "table-heading",
+      "kind": "chrome",
+      "pixelBox": {
+        "x": 268,
+        "y": 270,
+        "w": 1316,
+        "h": 55
+      },
+      "note": "Light gray table header strip with fine boundary"
+    },
+    {
+      "id": "header-node",
+      "kind": "text",
+      "pixelBox": {
+        "x": 287,
+        "y": 289,
+        "w": 117,
+        "h": 28
+      },
+      "note": "Node column heading"
+    },
+    {
+      "id": "header-management-address",
+      "kind": "text",
+      "pixelBox": {
+        "x": 550,
+        "y": 289,
+        "w": 273,
+        "h": 28
+      },
+      "note": "Management address column heading"
+    },
+    {
+      "id": "header-connection",
+      "kind": "text",
+      "pixelBox": {
+        "x": 850,
+        "y": 289,
+        "w": 166,
+        "h": 28
+      },
+      "note": "Connection column heading"
+    },
+    {
+      "id": "header-status",
+      "kind": "text",
+      "pixelBox": {
+        "x": 1063,
+        "y": 289,
+        "w": 157,
+        "h": 28
+      },
+      "note": "Status column heading"
+    },
+    {
+      "id": "header-action",
+      "kind": "text",
+      "pixelBox": {
+        "x": 1317,
+        "y": 289,
+        "w": 153,
+        "h": 28
+      },
+      "note": "Action column heading"
+    },
+    {
+      "id": "device-icon-0",
+      "kind": "control",
+      "pixelBox": {
+        "x": 293,
+        "y": 345,
+        "w": 59,
+        "h": 43
+      },
+      "note": "Small device icon glyph; replace with matching icon library symbol"
+    },
+    {
+      "id": "hostname-0",
+      "kind": "text",
+      "pixelBox": {
+        "x": 367,
+        "y": 355,
+        "w": 125,
+        "h": 28
+      },
+      "note": "Rtest device name"
+    },
+    {
+      "id": "endpoint-0",
+      "kind": "text",
+      "pixelBox": {
+        "x": 550,
+        "y": 355,
+        "w": 226,
+        "h": 29
+      },
+      "note": "Management endpoint or Serial port"
+    },
+    {
+      "id": "transport-0",
+      "kind": "text",
+      "pixelBox": {
+        "x": 850,
+        "y": 355,
+        "w": 138,
+        "h": 29
+      },
+      "note": "Transport label"
+    },
+    {
+      "id": "status-0",
+      "kind": "control",
+      "pixelBox": {
+        "x": 1062,
+        "y": 345,
+        "w": 160,
+        "h": 43
+      },
+      "note": "Unreachable status icon and text"
+    },
+    {
+      "id": "configure-0",
+      "kind": "control",
+      "pixelBox": {
+        "x": 1317,
+        "y": 345,
+        "w": 150,
+        "h": 47
+      },
+      "note": "Configure action button"
+    },
+    {
+      "id": "delete-0",
+      "kind": "control",
+      "pixelBox": {
+        "x": 1504,
+        "y": 345,
+        "w": 51,
+        "h": 47
+      },
+      "note": "Subordinate Delete button"
+    },
+    {
+      "id": "device-icon-1",
+      "kind": "control",
+      "pixelBox": {
+        "x": 293,
+        "y": 435,
+        "w": 59,
+        "h": 43
+      },
+      "note": "Small device icon glyph; replace with matching icon library symbol"
+    },
+    {
+      "id": "hostname-1",
+      "kind": "text",
+      "pixelBox": {
+        "x": 367,
+        "y": 445,
+        "w": 125,
+        "h": 28
+      },
+      "note": "SW1 device name"
+    },
+    {
+      "id": "endpoint-1",
+      "kind": "text",
+      "pixelBox": {
+        "x": 550,
+        "y": 445,
+        "w": 226,
+        "h": 29
+      },
+      "note": "Management endpoint or Serial port"
+    },
+    {
+      "id": "transport-1",
+      "kind": "text",
+      "pixelBox": {
+        "x": 850,
+        "y": 445,
+        "w": 138,
+        "h": 29
+      },
+      "note": "Transport label"
+    },
+    {
+      "id": "status-1",
+      "kind": "control",
+      "pixelBox": {
+        "x": 1062,
+        "y": 435,
+        "w": 160,
+        "h": 43
+      },
+      "note": "Unreachable status icon and text"
+    },
+    {
+      "id": "configure-1",
+      "kind": "control",
+      "pixelBox": {
+        "x": 1317,
+        "y": 435,
+        "w": 150,
+        "h": 47
+      },
+      "note": "Configure action button"
+    },
+    {
+      "id": "delete-1",
+      "kind": "control",
+      "pixelBox": {
+        "x": 1504,
+        "y": 435,
+        "w": 51,
+        "h": 47
+      },
+      "note": "Subordinate Delete button"
+    },
+    {
+      "id": "device-icon-2",
+      "kind": "control",
+      "pixelBox": {
+        "x": 293,
+        "y": 525,
+        "w": 59,
+        "h": 43
+      },
+      "note": "Small device icon glyph; replace with matching icon library symbol"
+    },
+    {
+      "id": "hostname-2",
+      "kind": "text",
+      "pixelBox": {
+        "x": 367,
+        "y": 535,
+        "w": 125,
+        "h": 28
+      },
+      "note": "R3 device name"
+    },
+    {
+      "id": "endpoint-2",
+      "kind": "text",
+      "pixelBox": {
+        "x": 550,
+        "y": 535,
+        "w": 226,
+        "h": 29
+      },
+      "note": "Management endpoint or Serial port"
+    },
+    {
+      "id": "transport-2",
+      "kind": "text",
+      "pixelBox": {
+        "x": 850,
+        "y": 535,
+        "w": 138,
+        "h": 29
+      },
+      "note": "Transport label"
+    },
+    {
+      "id": "status-2",
+      "kind": "control",
+      "pixelBox": {
+        "x": 1062,
+        "y": 525,
+        "w": 160,
+        "h": 43
+      },
+      "note": "Unreachable status icon and text"
+    },
+    {
+      "id": "configure-2",
+      "kind": "control",
+      "pixelBox": {
+        "x": 1317,
+        "y": 525,
+        "w": 150,
+        "h": 47
+      },
+      "note": "Configure action button"
+    },
+    {
+      "id": "delete-2",
+      "kind": "control",
+      "pixelBox": {
+        "x": 1504,
+        "y": 525,
+        "w": 51,
+        "h": 47
+      },
+      "note": "Subordinate Delete button"
+    },
+    {
+      "id": "device-icon-3",
+      "kind": "control",
+      "pixelBox": {
+        "x": 293,
+        "y": 615,
+        "w": 59,
+        "h": 43
+      },
+      "note": "Small device icon glyph; replace with matching icon library symbol"
+    },
+    {
+      "id": "hostname-3",
+      "kind": "text",
+      "pixelBox": {
+        "x": 367,
+        "y": 625,
+        "w": 125,
+        "h": 28
+      },
+      "note": "R2 device name"
+    },
+    {
+      "id": "endpoint-3",
+      "kind": "text",
+      "pixelBox": {
+        "x": 550,
+        "y": 625,
+        "w": 226,
+        "h": 29
+      },
+      "note": "Management endpoint or Serial port"
+    },
+    {
+      "id": "transport-3",
+      "kind": "text",
+      "pixelBox": {
+        "x": 850,
+        "y": 625,
+        "w": 138,
+        "h": 29
+      },
+      "note": "Transport label"
+    },
+    {
+      "id": "status-3",
+      "kind": "control",
+      "pixelBox": {
+        "x": 1062,
+        "y": 615,
+        "w": 160,
+        "h": 43
+      },
+      "note": "Unreachable status icon and text"
+    },
+    {
+      "id": "configure-3",
+      "kind": "control",
+      "pixelBox": {
+        "x": 1317,
+        "y": 615,
+        "w": 150,
+        "h": 47
+      },
+      "note": "Configure action button"
+    },
+    {
+      "id": "delete-3",
+      "kind": "control",
+      "pixelBox": {
+        "x": 1504,
+        "y": 615,
+        "w": 51,
+        "h": 47
+      },
+      "note": "Subordinate Delete button"
+    }
+  ]
+}

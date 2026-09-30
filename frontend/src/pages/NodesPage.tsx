@@ -1,20 +1,48 @@
+// หน้ารายการอุปกรณ์: แสดงข้อมูลจริงและผลตรวจการเชื่อมต่อล่าสุด
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Plus, Search, Server, ShieldAlert, Terminal, Trash2 } from 'lucide-react'
+import { ArrowRight, LayoutGrid, List, Plus, RefreshCw, Router, Search, Server, ShieldAlert, Trash2 } from 'lucide-react'
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { Topbar } from '../components/shared/Topbar'
 import { StatusBadge } from '../components/shared/StatusBadge'
 import { deleteNode, listNodes, type NodeResponse, type NodeStatus, testNodeConnection } from '../lib/api'
+import '../device-index.css'
 
 interface NodesPageProps {
   collapsed: boolean
   setCollapsed: (v: boolean) => void
 }
 
+function DeviceIdentity({ node }: { node: NodeResponse }) {
+  const Icon = node.device_kind === 'switch' ? Server : Router
+  return (
+    <div className="index-identity">
+      <Icon className="index-device-symbol" aria-hidden="true" />
+      <div className="index-device-label">
+        <Link to={`/nodes/${node.id}`} className="index-node-name" title={node.hostname}>{node.hostname}</Link>
+        <span className="index-device-kind">{node.device_kind === 'switch' ? 'Switch' : 'Router'}</span>
+      </div>
+    </div>
+  )
+}
+
+function DeviceActions({ node, onDelete, pending }: { node: NodeResponse; onDelete: (node: NodeResponse) => void; pending: boolean }) {
+  return (
+    <div className="index-actions">
+      <Link to={`/nodes/${node.id}`} className="index-primary configure-action" aria-label={`Configure ${node.hostname}`}>
+        <ArrowRight size={17} aria-hidden="true" />Configure
+      </Link>
+      <button type="button" className="index-delete" onClick={() => onDelete(node)} disabled={pending} aria-label={`ลบ Node ${node.hostname}`} title={`ลบ Node ${node.hostname}`}>
+        <Trash2 size={18} aria-hidden="true" />
+      </button>
+    </div>
+  )
+}
+
 export function NodesPage({ collapsed, setCollapsed }: NodesPageProps) {
   const [search, setSearch] = useState('')
-  const [view, setView] = useState<'card' | 'table'>('card')
-  const navigate = useNavigate()
+  const [view, setView] = useState<'card' | 'table'>('table')
+  const [statusFilter, setStatusFilter] = useState<NodeStatus | ''>('')
   const queryClient = useQueryClient()
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteNode(id),
@@ -28,12 +56,10 @@ export function NodesPage({ collapsed, setCollapsed }: NodesPageProps) {
       deleteMutation.mutate(node.id)
     }
   }
-
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['nodes', search],
     queryFn: () => listNodes(search),
   })
-
   const healthQueries = useQueries({
     queries: (data?.nodes ?? []).map((node) => ({
       queryKey: ['node-health', node.id],
@@ -44,154 +70,88 @@ export function NodesPage({ collapsed, setCollapsed }: NodesPageProps) {
     })),
   })
   const healthById = new Map((data?.nodes ?? []).map((node, index) => [node.id, healthQueries[index]]))
-  const liveStatus = (fallback: NodeStatus, nodeId: string): NodeStatus => {
-    const health = healthById.get(nodeId)
-    if (!health) return fallback
-    // polling อาจชนกับ Reconnect/config lock; ใช้สถานะล่าสุดแทน Unknown ชั่วคราว
-    if (health.isError) return fallback
+  const liveStatus = (node: NodeResponse): NodeStatus => {
+    const health = healthById.get(node.id)
+    // เมื่อ polling ชน config lock ให้คงสถานะล่าสุด ไม่แสดง Unknown ชั่วคราว
+    if (!health || health.isError) return node.status
     if (health.isFetching && !health.data) return 'checking'
     if (health.data?.overall_status === 'success') return 'connected'
     if (health.data?.overall_status === 'failed') return 'unreachable'
-    return fallback
+    return node.status
   }
+  const nodes = (data?.nodes ?? []).filter((node) => !statusFilter || liveStatus(node) === statusFilter)
+  const clearFilters = () => { setSearch(''); setStatusFilter('') }
 
   return (
-    <div className="flex-1 flex flex-col min-h-screen">
-      <Topbar collapsed={collapsed} setCollapsed={setCollapsed} title="Nodes Dashboard" />
-
-      <main className="p-6">
-        <p className="mb-4 text-sm text-gray-600">จัดการอุปกรณ์ที่บันทึกไว้และเปิดหน้าตั้งค่า สถานะเป็นผลตรวจล่าสุด โดยระบบตรวจซ้ำทุก 30 วินาทีขณะเปิดหน้านี้</p>
-        {deleteMutation.isError && <p role="alert" className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">ลบ Node ไม่สำเร็จ กรุณาลองใหม่</p>}
-        {/* Toolbar */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center mb-6">
-          <div className="relative w-full sm:w-72">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="ค้นหาชื่ออุปกรณ์หรือ IP"
-              aria-label="ค้นหาชื่ออุปกรณ์หรือ IP"
-              className="input-field pl-9"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+    <div className="device-index-page">
+      <Topbar collapsed={collapsed} setCollapsed={setCollapsed} title="Nodes" variant="breadcrumb" />
+      <main className="device-index-content">
+        <div className="index-heading">
+          <div>
+            <h1>Nodes</h1>
+            <p>จัดการอุปกรณ์และเปิดหน้าตั้งค่า Interface หรือ Routing</p>
           </div>
-          
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <div className="bg-gray-100 p-1 rounded-lg flex items-center">
-              <button
-                className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${view === 'card' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
-                onClick={() => setView('card')}
-              >
-                Cards
-              </button>
-              <button
-                className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${view === 'table' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
-                onClick={() => setView('table')}
-              >
-                Table
-              </button>
-            </div>
-            
-            <Link to="/nodes/add" className="btn-primary flex items-center gap-2 flex-1 justify-center sm:flex-none">
-              <Plus className="w-4 h-4" />
-              Add Node
-            </Link>
+          <Link to="/nodes/add" className="index-primary index-add"><Plus size={21} aria-hidden="true" />Add Node</Link>
+        </div>
+        {deleteMutation.isError && <p role="alert" className="index-error"><ShieldAlert size={18} aria-hidden="true" />ลบ Node ไม่สำเร็จ กรุณาลองใหม่</p>}
+        <div className="index-toolbar">
+          <div className="index-search">
+            <Search size={20} aria-hidden="true" />
+            <input type="search" placeholder="ค้นหาชื่ออุปกรณ์หรือ IP" aria-label="ค้นหาชื่ออุปกรณ์หรือ IP" value={search} onChange={(event) => setSearch(event.target.value)} onKeyDown={(event) => { if (event.key === 'Escape') setSearch('') }} />
+          </div>
+          <select className="index-status-filter" aria-label="กรองสถานะอุปกรณ์" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as NodeStatus | '')}>
+            <option value="">ทุกสถานะ</option>
+            <option value="connected">Connected</option>
+            <option value="unreachable">Unreachable</option>
+            <option value="checking">Checking</option>
+            <option value="unknown">Unknown</option>
+          </select>
+          <div className="index-view-switch" role="group" aria-label="มุมมองรายการอุปกรณ์">
+            <button type="button" aria-pressed={view === 'table'} onClick={() => setView('table')}><List size={19} aria-hidden="true" />Table</button>
+            <button type="button" aria-pressed={view === 'card'} onClick={() => setView('card')}><LayoutGrid size={18} aria-hidden="true" />Cards</button>
           </div>
         </div>
-
-        {/* Content */}
+        <p className="index-status-note">สถานะเป็นผลตรวจล่าสุด · ตรวจซ้ำทุก 30 วินาทีขณะเปิดหน้านี้</p>
         {isLoading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="spinner text-accent-DEFAULT" />
-          </div>
+          <div className="index-state" role="status"><RefreshCw className="index-spin" aria-hidden="true" /><p>กำลังโหลดรายการอุปกรณ์…</p></div>
         ) : isError ? (
-          <div className="card border-red-200 bg-red-50 text-center py-12">
-            <ShieldAlert className="w-8 h-8 text-red-500 mx-auto mb-3" />
-            <h3 className="text-red-700 font-medium">โหลดรายการอุปกรณ์ไม่สำเร็จ</h3>
-            <p className="text-red-600 text-sm mt-1">ตรวจสอบว่า backend ทำงานอยู่ แล้วลองเปิดหน้านี้อีกครั้ง</p>
+          <div className="index-state" role="alert">
+            <ShieldAlert aria-hidden="true" /><h2>โหลดรายการอุปกรณ์ไม่สำเร็จ</h2>
+            <p>ตรวจสอบว่า backend ทำงานอยู่ แล้วลองอีกครั้ง</p>
+            <button type="button" className="index-secondary" onClick={() => refetch()}><RefreshCw size={17} aria-hidden="true" />ลองอีกครั้ง</button>
           </div>
-        ) : data?.nodes.length === 0 ? (
-          <div className="card text-center py-16">
-            <Server className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-gray-900 font-medium text-lg mb-1">{search ? 'ไม่พบอุปกรณ์ที่ตรงกับคำค้น' : 'ยังไม่มีอุปกรณ์'}</h3>
-            <p className="text-gray-500 text-sm mb-6">{search ? 'ลองค้นด้วยชื่ออุปกรณ์หรือ IP อื่น' : 'เพิ่มอุปกรณ์และทดสอบการเชื่อมต่อก่อนเริ่มตั้งค่า'}</p>
-            {!search && <Link to="/nodes/add" className="btn-primary inline-flex items-center gap-2">
-              <Plus className="w-4 h-4" />
-              Add Node
-            </Link>}
+        ) : nodes.length === 0 ? (
+          <div className="index-state">
+            <Server aria-hidden="true" /><h2>{search || statusFilter ? 'ไม่พบอุปกรณ์ที่ตรงกับตัวกรอง' : 'ยังไม่มีอุปกรณ์'}</h2>
+            <p>{search || statusFilter ? 'เปลี่ยนคำค้นหรือสถานะเพื่อดูรายการอื่น' : 'เพิ่มอุปกรณ์และทดสอบการเชื่อมต่อก่อนเริ่มตั้งค่า'}</p>
+            {search || statusFilter ? <button type="button" className="index-secondary" onClick={clearFilters}>ล้างตัวกรอง</button> : <Link to="/nodes/add" className="index-primary"><Plus size={18} aria-hidden="true" />Add Node</Link>}
           </div>
-        ) : view === 'card' ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {data?.nodes.map((node) => (
-              <div
-                key={node.id}
-                className="card hover:shadow-md transition-shadow cursor-pointer flex flex-col"
-                onClick={() => navigate(`/nodes/${node.id}`)}
-              >
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <Terminal className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-900 truncate" title={node.hostname}>
-                        {node.hostname}
-                      </h3>
-                      <p className="text-xs text-gray-500 uppercase tracking-wider">{node.device_kind}</p>
-                    </div>
-                  </div>
-                  <StatusBadge status={liveStatus(node.status, node.id)} />
-                </div>
-                
-                <div className="mt-auto space-y-2 text-sm">
-                  <div className="flex justify-between text-gray-500">
-                    <span>ที่อยู่จัดการ / พอร์ต</span>
-                    <span className="text-gray-900 font-medium truncate max-w-[140px]" title={node.host || node.serial_port || ''}>
-                      {node.host || node.serial_port || 'N/A'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-gray-500">
-                    <span>การเชื่อมต่อ</span>
-                    <span className="text-gray-900 uppercase text-xs font-semibold bg-gray-100 px-2 py-0.5 rounded">
-                      {node.transport}
-                    </span>
-                  </div>
-                  <button type="button" className="btn-ghost btn-sm text-red-700 mt-2" onClick={(event) => { event.stopPropagation(); confirmDelete(node) }} disabled={deleteMutation.isPending}><Trash2 className="w-4 h-4" />ลบ Node</button>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="table-wrap">
-            <table className="ds-table">
-              <thead>
-                <tr>
-                  <th>Hostname</th>
-                  <th>IP / Port</th>
-                  <th>Type</th>
-                  <th>Protocol</th>
-                  <th>Status</th>
-                  <th className="text-right">Added</th>
-                  <th className="text-right">Actions</th>
+        ) : view === 'table' ? (
+          <div className="index-table-scroll" role="region" aria-label="รายการอุปกรณ์" tabIndex={0}>
+            <table className="index-table">
+              <caption className="sr-only">รายการอุปกรณ์และผลตรวจการเชื่อมต่อล่าสุด</caption>
+              <colgroup><col style={{ width: '20%' }} /><col style={{ width: '23%' }} /><col style={{ width: '16%' }} /><col style={{ width: '19%' }} /><col style={{ width: '22%' }} /></colgroup>
+              <thead><tr><th scope="col">Node</th><th scope="col">IP / Console port</th><th scope="col">Connection</th><th scope="col">Status</th><th scope="col">Actions</th></tr></thead>
+              <tbody>{nodes.map((node) => (
+                <tr key={node.id}>
+                  <td><DeviceIdentity node={node} /></td>
+                  <td className="index-endpoint">{node.host || node.serial_port || '—'}</td>
+                  <td className="index-transport">{node.transport}</td>
+                  <td><StatusBadge status={liveStatus(node)} /></td>
+                  <td><DeviceActions node={node} onDelete={confirmDelete} pending={deleteMutation.isPending} /></td>
                 </tr>
-              </thead>
-              <tbody>
-                {data?.nodes.map((node) => (
-                  <tr key={node.id} onClick={() => navigate(`/nodes/${node.id}`)} className="cursor-pointer">
-                    <td className="font-medium text-gray-900">{node.hostname}</td>
-                    <td className="font-mono text-xs">{node.host || node.serial_port || '-'}</td>
-                    <td className="capitalize">{node.device_kind}</td>
-                    <td className="uppercase text-xs font-semibold">{node.transport}</td>
-                    <td><StatusBadge status={liveStatus(node.status, node.id)} /></td>
-                    <td className="text-right text-gray-500">
-                      {new Date(node.created_at).toLocaleDateString()}
-                    </td>
-                    <td className="text-right"><button type="button" className="btn-ghost btn-sm text-red-700" onClick={(event) => { event.stopPropagation(); confirmDelete(node) }} disabled={deleteMutation.isPending} aria-label={`ลบ Node ${node.hostname}`}><Trash2 className="w-4 h-4" />ลบ</button></td>
-                  </tr>
-                ))}
-              </tbody>
+              ))}</tbody>
             </table>
           </div>
+        ) : (
+          <div className="index-cards">{nodes.map((node) => (
+            <article key={node.id} className="index-device-card">
+              <DeviceIdentity node={node} />
+              <div className="index-card-endpoint"><span className="index-endpoint">{node.host || node.serial_port || '—'}</span><span className="index-transport">{node.transport}</span></div>
+              <StatusBadge status={liveStatus(node)} />
+              <DeviceActions node={node} onDelete={confirmDelete} pending={deleteMutation.isPending} />
+            </article>
+          ))}</div>
         )}
       </main>
     </div>

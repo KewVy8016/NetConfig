@@ -13,6 +13,33 @@ Professional Network Operations Console for configuring Cisco Router/Switch via 
 
 ## Color Tokens
 
+### Device Index — approved replacement for Nodes (2026-09-30)
+
+ผู้ใช้อนุมัติหน้า Nodes ตาม `.impeccable/mocks/decision/assigned-v2.png` และให้เริ่ม
+implementation โดยไม่แสดงแผงสอนขั้นตอนด้านล่าง. ข้อกำหนดส่วนนี้แทน visual rules
+ของ Nodes/shared navigation ใน baseline ด้านล่าง; ไม่เปลี่ยน functional workflows
+ของ Add Node, Node Detail, CLI หรือ History. Baseline เก็บไว้เพื่ออ้างอิงระหว่างย้าย.
+
+- White work plane `#FFFFFF`, cool gray boundaries, graphite sidebar `#1D2838`,
+  teal actions `#086281`; terminal/status meanings เดิมไม่เปลี่ยน
+- Sidebar 234–240px บน desktop, ย่อเป็น 64px ได้; tablet ใช้ overlay navigation
+- Breadcrumb ด้านบน, หัวข้อ Nodes เด่น, Add Node อยู่ขวาของหัวข้อ
+- Search และ Table/Cards อยู่เหนือ inventory; Table เป็นค่าเริ่มต้น
+- ตารางเรียง Node (icon/name/type), management IP/Serial port, transport, status,
+  Configure และ Delete. ใช้ Link ที่กด Enter ได้ ไม่พึ่ง clickable row อย่างเดียว
+- สถานะใช้ icon + text + color; ค่าทั้งหมดมาจาก API/ผล health check เดิม
+- Delete ต้องยืนยันและไม่เปลี่ยน device config/History; Configure เปิดรายละเอียด
+- หัวข้อภาษาอังกฤษตามภาพ, guidance ภาษาไทย; endpoint ใช้ monospace
+- ไม่แสดง example-data caption หรือสร้าง selected Node ขึ้นเองจากภาพ
+- ไม่มีแผง “Configure a node”, metrics เทียม หรือภาพ mockup แทน working UI
+- 1280px+ อ่านทุกคอลัมน์ได้; tablet ใช้พื้นที่เต็มและเลื่อนเฉพาะตารางได้เมื่อจำเป็น
+
+Reference HTML และ production React ปรับแล้วหลังผู้ใช้กด Approve plan review.
+สไตล์แยกใน `frontend/src/device-index.css`; baseline ของ form/config เดิมไม่ถูกทับ.
+Ubuntu Sans 700 เก็บใน project สำหรับ brand/heading; body ไทยและ monospace ใช้ฟอนต์เดิม.
+Filter สถานะทำใน UI จาก health result เดิม; retry/error/empty มีข้อความไทย.
+ผลตรวจและข้อจำกัดอยู่ที่ `docs/UI_REDESIGN_QA.md`; strict comp checkpoint ยังไม่ผ่าน.
+
 ### Core Palette
 
 | Token | Hex | Usage |

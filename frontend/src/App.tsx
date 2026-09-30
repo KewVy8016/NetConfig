@@ -9,12 +9,21 @@ import { HistoryPage } from './pages/HistoryPage'
 function App() {
   const [collapsed, setCollapsed] = useState(() => {
     const saved = localStorage.getItem('sidebar_collapsed')
-    return saved === 'true'
+    return window.matchMedia('(max-width: 1024px)').matches || saved === 'true'
   })
 
   useEffect(() => {
-    localStorage.setItem('sidebar_collapsed', String(collapsed))
+    if (!window.matchMedia('(max-width: 1024px)').matches) localStorage.setItem('sidebar_collapsed', String(collapsed))
   }, [collapsed])
+
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 1024px)')
+    const adapt = () => setCollapsed(media.matches || localStorage.getItem('sidebar_collapsed') === 'true')
+    const closeOnEscape = (event: KeyboardEvent) => { if (media.matches && event.key === 'Escape') setCollapsed(true) }
+    media.addEventListener('change', adapt)
+    window.addEventListener('keydown', closeOnEscape)
+    return () => { media.removeEventListener('change', adapt); window.removeEventListener('keydown', closeOnEscape) }
+  }, [])
 
   return (
     <BrowserRouter>
@@ -23,9 +32,7 @@ function App() {
         
         {/* Main Content Area */}
         <div 
-          className={`flex-1 flex flex-col transition-all duration-200 ${
-            collapsed ? 'ml-16' : 'ml-60'
-          }`}
+          className={`index-main ${collapsed ? 'is-collapsed' : ''}`}
         >
           <Routes>
             <Route path="/" element={<NodesPage collapsed={collapsed} setCollapsed={setCollapsed} />} />

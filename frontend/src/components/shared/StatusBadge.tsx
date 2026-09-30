@@ -1,3 +1,5 @@
+// สถานะอุปกรณ์สื่อด้วยสี ไอคอน และข้อความ โดยคงความหมายเดิม
+import { CircleCheck, CircleHelp, CircleX, LoaderCircle } from 'lucide-react'
 type StatusType = 'connected' | 'unreachable' | 'checking' | 'unknown'
 
 interface StatusBadgeProps {
@@ -6,28 +8,12 @@ interface StatusBadgeProps {
 }
 
 export function StatusBadge({ status, text }: StatusBadgeProps) {
-  let badgeClass = 'badge-gray'
-  let label = text || 'Unknown'
-
-  switch (status) {
-    case 'connected':
-      badgeClass = 'badge-green'
-      label = text || 'Connected'
-      break
-    case 'unreachable':
-      badgeClass = 'badge-red'
-      label = text || 'Unreachable'
-      break
-    case 'checking':
-      badgeClass = 'badge-amber'
-      label = text || 'Checking'
-      break
+  const states = {
+    connected: { style: 'badge-green', label: 'Connected', Icon: CircleCheck },
+    unreachable: { style: 'badge-red', label: 'Unreachable', Icon: CircleX },
+    checking: { style: 'badge-amber', label: 'Checking', Icon: LoaderCircle },
+    unknown: { style: 'badge-gray', label: 'Unknown', Icon: CircleHelp },
   }
-
-  return (
-    <span className={`badge ${badgeClass}`}>
-      <span className="badge-dot" />
-      {label}
-    </span>
-  )
+  const { style, label, Icon } = states[status]
+  return <span className={`badge ${style}`}><Icon size={14} aria-hidden="true" />{text || label}</span>
 }
