@@ -218,6 +218,7 @@ Badge always includes `.badge-dot` (colored dot) + text label.
 - Search by hostname/IP
 - Filter by status (Connected, Unreachable, Checking, Unknown)
 - Add Node button → navigates to Add Node Wizard
+- Delete Node action in card/table and Node Detail header → confirmation names the Node; it removes the saved connection and pending previews, leaves device configuration unchanged, and preserves History
 - Node card shows: hostname, IP, protocol, status badge
 - Empty state when no nodes exist
 
@@ -253,7 +254,7 @@ Badge always includes `.badge-dot` (colored dot) + text label.
 
 **Sticky Header:**
 - Hostname, IP, Protocol, Status badge
-- Actions: Save Config, Disconnect, Reconnect
+- Actions: Save Config, Reconnect, Delete Node (with confirmation)
 - Back breadcrumb ← to Nodes Dashboard
 
 **Tabs:**
@@ -263,13 +264,18 @@ Badge always includes `.badge-dot` (colored dot) + text label.
 | Interfaces | Interface table with IP, Mask, Status, Protocol, Method and an Admin State toggle at the end of each row. Toggle creates a preview for Shutdown/No Shutdown; Apply remains explicit in the preview dialog. Configure Interface remains inline; other configuration profiles open in a dialog popup. |
 | Routing | Protocol selector (OSPF/RIP/EIGRP/BGP/Static). Network tables with inline edit/delete. Add Network form. |
 | Show | Shortcut buttons grouped by category (Interfaces, Routing, System). Raw + Table view. Copy, Clear, timestamp. |
-| CLI | Dark terminal with prompt. Command history via arrow keys. Copy, Clear, Disconnect buttons. |
+| CLI | One restrained device-console workspace: compact title/endpoint/session controls above one dark output pane, with the live prompt and command input integrated at the bottom of that pane. Opens a temporary connection when selected; commands send one line at a time immediately, with arrow-key history, Copy, Clear, Disconnect and Reconnect. Show a compact warning that CLI bypasses Preview and Save Config is separate. A stale/closed socket must visibly become Disconnected or show an error instead of silently ignoring Send. Results are audited without storing command/output text that may contain secrets. Do not invent uptime or add decorative window dots/cards. |
 | Command History | — (separate page) |
 
 Router nodes show all four tabs. Switch nodes omit **Routing** because routing-protocol forms are
 outside the switch workflow; their L2/L3 port and VLAN tasks remain under Interfaces. If a node
 role changes while Routing is active, the UI returns to Interfaces instead of leaving hidden
 content selected.
+
+Routing status is read from `show running-config` independently of whether any interface has an
+IPv4 address. Its summary distinguishes loading, not configured, configured, and read failure;
+a failed read must never be shown as Off. Console devices may enter privileged EXEC without an
+Enable Secret, so the server attempts `enable` before reporting that a secret is required.
 
 Interface configuration must load the current interface names from the device with
 `show ip interface brief` when the Interfaces tab opens. The Interface field is a select,
@@ -342,6 +348,7 @@ stays open so the user can read the error and take recovery action.
 - Sorted newest first, 10 rows per page with previous/next controls and total count
 - Pagination controls are bordered and grouped separately from the count; previous/next icons sit inline with their labels, disabled states are visible. Center the Details header and each Details button on the same column axis
 - Include explicit Show commands in audit; loading/error/empty states and copy feedback are visible
+- CLI and Node Delete entries use Thai action labels. CLI History shows outcome/correlation but no raw command or output; Node Delete retains the saved hostname snapshot.
 - Audit is append-only: replace mock Clear History button with non-destructive notice
 
 ---
@@ -351,6 +358,8 @@ stays open so the user can read the error and take recovery action.
 ### Protocol Summary Bar
 - Horizontal bar showing all protocols at a glance
 - Each protocol: name, status dot (green/gray), network count
+- If the read fails, show an error icon and “อ่านไม่ได้” rather than “Off”. No interface IP is required to detect a configured routing process.
+- If the IOS process has no explicit Router ID yet, show “Router-ID ยังไม่กำหนด” while retaining parsed networks/neighbors; do not invent a placeholder IP. New/edited entries still require a valid Router ID in the form before Preview.
 - Example: `OSPF ● Active 2 networks | RIP ● Off | EIGRP ● Off | BGP ● Off`
 
 ### Protocol Tabs

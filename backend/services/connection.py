@@ -146,7 +146,7 @@ T = TypeVar("T")
 
 
 class EnableSecretRequiredError(RuntimeError):
-    """แจ้งว่า session ยังไม่อยู่ privileged EXEC และไม่มี enable secret ให้ใช้งาน"""
+    """แจ้งว่าอุปกรณ์ถามรหัส enable แต่ Node ยังไม่มี secret ที่ใช้ได้"""
 
 
 async def _run_in_executor(fn: Callable[[], T]) -> T:
@@ -355,6 +355,10 @@ _CLI_ERROR_MARKERS = (
     "% Invalid input",
     "% Incomplete command",
     "% Ambiguous command",
+    "% Unrecognized command",
+    "% Privileged command",
+    "% Authorization failed",
+    "% Permission denied",
     "% Error",
     "Error:",
 )
@@ -383,11 +387,15 @@ def _open_connection(
     connection = ConnectHandler(**build_device_dict(transport_config))
     try:
         if require_enable and not connection.check_enable_mode():
-            if not transport_config.secret:
-                raise EnableSecretRequiredError(
-                    "อุปกรณ์ต้องใช้ Enable Secret ก่อนแก้ configuration"
-                )
-            connection.enable()
+            # Console หลายตัวเข้า enable ได้โดยไม่ใช้รหัส จึงต้องลองจริงก่อนสรุปว่าขาด secret.
+            try:
+                connection.enable()
+            except (NetmikoAuthenticationException, NetmikoTimeoutException, ValueError) as exc:
+                if not transport_config.secret:
+                    raise EnableSecretRequiredError(
+                        "อุปกรณ์ขอรหัส Enable; เพิ่ม Node ใหม่พร้อม Enable Secret แล้วลองอีกครั้ง"
+                    ) from exc
+                raise
         return connection
     except Exception:
         connection.disconnect()
@@ -441,7 +449,10 @@ def send_show_command(
     """
     connection = _open_connection(transport_config, require_enable=require_enable)
     try:
-        return redact_text(connection.send_command(command, use_textfsm=False))
+        output = redact_text(connection.send_command(command, use_textfsm=False))
+        if require_enable and (not output.strip() or _contains_cli_error(output)):
+            raise RuntimeError("อุปกรณ์ปฏิเสธการอ่าน running-config")
+        return output
     finally:
         connection.disconnect()
 

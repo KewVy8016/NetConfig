@@ -12,7 +12,7 @@ from fastapi.responses import JSONResponse
 
 from backend.config import get_settings
 from backend.database import init_db
-from backend.routers import config, nodes
+from backend.routers import config, nodes, terminal
 
 # ---------------------------------------------------------------------------
 # Lifespan — startup และ shutdown
@@ -59,6 +59,7 @@ app.add_middleware(
 # Register routers
 app.include_router(nodes.router)
 app.include_router(config.router)
+app.include_router(terminal.router)
 
 
 # ---------------------------------------------------------------------------

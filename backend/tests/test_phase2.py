@@ -9,7 +9,11 @@ from backend.services.parser import (
     parse_show_ip_interface_brief,
     parse_show_ip_route,
 )
-from backend.services.renderer import calculate_wildcard, render_interface_admin_commands, render_interface_commands
+from backend.services.renderer import (
+    calculate_wildcard,
+    render_interface_admin_commands,
+    render_interface_commands,
+)
 from backend.tests.conftest import SSH_NODE_PAYLOAD
 
 
@@ -208,7 +212,7 @@ def test_get_interface_current_rejects_command_injection(client) -> None:
 
 
 def test_config_apply_without_enable_secret_returns_specific_error(client) -> None:
-    """Apply จาก user EXEC โดยไม่มี enable secret ต้องคืน error ที่แก้ไขได้ชัดเจน"""
+    """เมื่ออุปกรณ์ถาม enable จริงแต่ไม่มี secret ต้องคืน error ที่แก้ไขได้ชัดเจน"""
     node_payload = {
         **SSH_NODE_PAYLOAD,
         "hostname": "Phase2EnableRequired",
@@ -229,6 +233,7 @@ def test_config_apply_without_enable_secret_returns_specific_error(client) -> No
     preview = client.post(f"/nodes/{node_id}/config/interface/preview", json=payload).json()
     fake_connection = MagicMock()
     fake_connection.check_enable_mode.return_value = False
+    fake_connection.enable.side_effect = ValueError("Failed to enter enable mode")
     with patch("backend.services.connection.ConnectHandler", return_value=fake_connection):
         response = client.post(
             f"/nodes/{node_id}/config/interface/apply",
@@ -237,4 +242,5 @@ def test_config_apply_without_enable_secret_returns_specific_error(client) -> No
     assert response.status_code == 200
     assert response.json()["overall_status"] == "failed"
     assert response.json()["results"][0]["error_code"] == "ENABLE_SECRET_REQUIRED"
+    fake_connection.enable.assert_called_once()
     fake_connection.disconnect.assert_called_once()

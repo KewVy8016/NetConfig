@@ -21,6 +21,8 @@ const commandLabels: Record<string, string> = {
   'BGP Configuration': 'ตั้งค่า BGP',
   'Save Configuration': 'บันทึก Config',
   'Show Command': 'ดูข้อมูลอุปกรณ์',
+  'CLI Command': 'ใช้คำสั่ง CLI',
+  'Node Delete': 'ลบ Node',
 }
 
 /** แสดง audit ของคำสั่งที่ส่งอุปกรณ์แบบ newest-first */
@@ -84,6 +86,7 @@ export function HistoryPage({ collapsed, setCollapsed }: { collapsed: boolean; s
         <div><label className="mb-1 block text-xs font-semibold text-slate-600" htmlFor="history-to">ถึง</label><input id="history-to" type="datetime-local" className="input-field w-full min-w-0" value={timeTo} onChange={(event) => changeTime(timeFrom, event.target.value)} /></div>
         </div>
         <p className="mt-2 text-xs text-slate-500">ช่วงเวลาใช้เวลาท้องถิ่นของเครื่องที่เปิดเว็บ และรวมรายการที่เกิดภายในนาทีสิ้นสุดที่เลือก</p>
+        <p className="mt-1 text-xs text-slate-500">รายการ CLI เก็บผลสำเร็จ/ผิดพลาดโดยไม่เก็บคำสั่งหรือ output; History ของ Node ที่ลบแล้วยังคงอยู่</p>
         {timeError && <p role="alert" className="mt-2 text-sm text-red-700">{timeError}</p>}
         <div className="mt-3 flex items-center justify-between gap-3">
         {hasFilter ? <button type="button" className="btn-ghost btn-sm" onClick={clearFilters}>ล้างตัวกรอง</button> : <span />}

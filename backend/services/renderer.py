@@ -13,16 +13,19 @@ from pydantic import BaseModel
 from backend.models import (
     AccessPortConfig,
     BgpNeighborConfig,
+    BgpNeighborState,
     BgpNeighborUpdate,
     BgpNetworkConfig,
     BgpNetworkUpdate,
     EigrpNetworkConfig,
+    EigrpNetworkState,
     EigrpNetworkUpdate,
     InterfaceAdminConfig,
     InterfaceConfig,
     LoopbackConfig,
     LoopbackRemoveConfig,
     OspfNetworkConfig,
+    OspfNetworkState,
     OspfNetworkUpdate,
     RipNetworkConfig,
     RipNetworkUpdate,
@@ -219,7 +222,7 @@ def render_rip_process_remove() -> list[str]:
     return [line.rstrip() for line in rendered.splitlines() if line.strip()]
 
 
-def _ospf_template_values(payload: OspfNetworkConfig) -> dict[str, str | int]:
+def _ospf_template_values(payload: OspfNetworkConfig | OspfNetworkState) -> dict[str, str | int | None]:
     """คืนค่า OSPF พร้อม wildcard ที่คำนวณจาก netmask ฝั่ง server"""
     return {**payload.model_dump(), "wildcard": calculate_wildcard(payload.subnet_mask)}
 
@@ -230,7 +233,7 @@ def render_ospf_network(payload: OspfNetworkConfig) -> list[str]:
     return [line.rstrip() for line in rendered.splitlines() if line.strip()]
 
 
-def render_ospf_network_remove(payload: OspfNetworkConfig) -> list[str]:
+def render_ospf_network_remove(payload: OspfNetworkState) -> list[str]:
     """render inverse command สำหรับ OSPF network เดิม"""
     rendered = _ENVIRONMENT.get_template("ospf_network_remove.j2").render(**_ospf_template_values(payload))
     return [line.rstrip() for line in rendered.splitlines() if line.strip()]
@@ -254,7 +257,7 @@ def render_ospf_process_remove(process_id: int) -> list[str]:
     return [line.rstrip() for line in rendered.splitlines() if line.strip()]
 
 
-def _eigrp_template_values(payload: EigrpNetworkConfig) -> dict[str, str | int]:
+def _eigrp_template_values(payload: EigrpNetworkConfig | EigrpNetworkState) -> dict[str, str | int | None]:
     """คืนค่า EIGRP พร้อม wildcard ที่คำนวณจาก netmask ฝั่ง server"""
     return {**payload.model_dump(), "wildcard": calculate_wildcard(payload.subnet_mask)}
 
@@ -265,7 +268,7 @@ def render_eigrp_network(payload: EigrpNetworkConfig) -> list[str]:
     return [line.rstrip() for line in rendered.splitlines() if line.strip()]
 
 
-def render_eigrp_network_remove(payload: EigrpNetworkConfig) -> list[str]:
+def render_eigrp_network_remove(payload: EigrpNetworkState) -> list[str]:
     """render inverse EIGRP network command"""
     rendered = _ENVIRONMENT.get_template("eigrp_network_remove.j2").render(**_eigrp_template_values(payload))
     return [line.rstrip() for line in rendered.splitlines() if line.strip()]
@@ -290,7 +293,7 @@ def render_bgp_neighbor(payload: BgpNeighborConfig) -> list[str]:
     return [line.rstrip() for line in rendered.splitlines() if line.strip()]
 
 
-def render_bgp_neighbor_remove(payload: BgpNeighborConfig) -> list[str]:
+def render_bgp_neighbor_remove(payload: BgpNeighborState) -> list[str]:
     """render inverse command ที่ลบ BGP neighbor ที่ระบุเท่านั้น"""
     rendered = _ENVIRONMENT.get_template("bgp_neighbor_remove.j2").render(**payload.model_dump())
     return [line.rstrip() for line in rendered.splitlines() if line.strip()]

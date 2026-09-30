@@ -264,6 +264,15 @@
     .show-btn:hover { border-color: var(--accent); color: var(--accent); }
 
     /* Terminal */
+    .cli-shell { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-sm); }
+    .cli-toolbar { padding: 14px 20px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--border); }
+    .cli-toolbar-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+    .cli-warning { display: flex; gap: 8px; padding: 10px 20px; background: #FFFBEB; color: #92400E; font-size: var(--fs-xs); border-bottom: 1px solid #FEF3C7; }
+    .cli-command { display: flex; align-items: center; gap: 12px; padding: 12px 20px; border-top: 1px solid #334155; background: var(--terminal-bg); }
+    .cli-command .input { flex: 1; min-width: 0; background: transparent; border: 0; color: var(--terminal-text); font-family: var(--font-mono); padding: 6px 0; }
+    .cli-command .input:focus { border: 0; box-shadow: none; }
+    .cli-command .btn { border: 1px solid #475569; color: var(--terminal-text); background: transparent; }
+    .cli-footer { padding: 8px 20px; color: var(--muted); font-size: var(--fs-xs); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px; }
     .terminal { background: var(--terminal-bg); border: 1px solid var(--terminal-border); border-radius: var(--radius-lg); font-family: var(--font-mono); font-size: 13px; color: var(--terminal-text); overflow: hidden; }
     .terminal-header { padding: 10px 16px; border-bottom: 1px solid var(--terminal-border); display: flex; align-items: center; justify-content: space-between; }
     .terminal-dots { display: flex; gap: 6px; }
@@ -483,7 +492,7 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
             Reconnect
           </button>
-          <button class="btn btn-ghost btn-sm" style="color: var(--red);">Disconnect</button>
+          <button class="btn btn-ghost btn-sm" style="color: var(--red);" onclick="confirm('ลบ Node R1 ออกจากแอปหรือไม่? History เดิมยังอยู่')">Delete Node</button>
         </div>
       </div>
 
@@ -642,6 +651,7 @@
                     <div>
                       <div class="proto-view-title">OSPF — Open Shortest Path First</div>
                       <div class="proto-view-sub">Process ID 1 · Router-ID 1.1.1.1 · Area 0</div>
+                      <!-- If IOS omits router-id, show "Router-ID ยังไม่กำหนด" here and keep parsed networks visible. -->
                     </div>
                   </div>
                   <div class="proto-view-actions">
@@ -1082,34 +1092,13 @@
 
         <!-- ===== CLI TAB ===== -->
         <div class="tab-content" id="tab-cli">
-          <div style="margin-bottom: 16px;">
-            <h3 style="font-size: var(--fs-lg); font-weight: 600;">CLI Terminal</h3>
-            <p style="font-size: var(--fs-sm); color: var(--muted); margin-top: 4px;">Direct command-line access to the device</p>
-          </div>
-          <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 12px; padding: 10px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);">
-            <span class="badge badge-green"><span class="badge-dot"></span> Connected</span>
-            <span style="font-size: var(--fs-sm); color: var(--muted);">|</span>
-            <span style="font-size: var(--fs-sm); font-family: var(--font-mono); color: var(--fg);">192.168.1.11</span>
-            <span style="font-size: var(--fs-sm); color: var(--muted);">|</span>
-            <span style="font-size: var(--fs-sm); color: var(--muted);">Telnet</span>
-            <span style="font-size: var(--fs-sm); color: var(--muted);">|</span>
-            <span style="font-size: var(--fs-sm); color: var(--muted);">Uptime: 2h 34m</span>
-            <div style="margin-left: auto; display: flex; gap: 6px;">
-              <button class="btn btn-ghost btn-sm" onclick="copyTerminal()">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                Copy
-              </button>
-              <button class="btn btn-ghost btn-sm" onclick="clearTerminal()">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                Clear
-              </button>
+          <div class="cli-shell">
+            <div class="cli-toolbar">
+              <div><h3 style="font-size: var(--fs-lg); font-weight: 600;">Device CLI</h3><p style="font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--muted);">R1 / TELNET / 192.168.1.11</p></div>
+              <div class="cli-toolbar-actions"><span class="badge badge-green" id="cli-status"><span class="badge-dot"></span> Connected</span><button class="btn btn-ghost btn-sm" onclick="copyTerminal()">Copy</button><button class="btn btn-ghost btn-sm" onclick="clearTerminal()">Clear</button><button class="btn btn-secondary btn-sm" id="cli-session-button" onclick="toggleCliSession()">Disconnect</button></div>
             </div>
-          </div>
-          <div class="terminal">
-            <div class="terminal-header">
-              <div class="terminal-dots"><span class="red"></span><span class="yellow"></span><span class="green"></span></div>
-              <span style="font-size: var(--fs-xs); color: var(--muted);">R1 — Telnet — 192.168.1.11</span>
-            </div>
+            <div class="cli-warning">&#9432; คำสั่ง CLI ส่งทันที ไม่มี Preview · การบันทึกถาวรใช้ Save Config แยกต่างหาก</div>
+            <div class="terminal" style="border: 0; border-radius: 0;">
             <div class="terminal-body" id="terminal-body">
               <div class="terminal-line"><span class="terminal-output">R1#show version</span></div>
               <div class="terminal-line"><span class="terminal-output">Cisco IOS Software, C2900 Software (C2900NM-UNIVERSALK9-M), Version 15.1(4)M4</span></div>
@@ -1125,11 +1114,9 @@
               <div class="terminal-line"><span class="terminal-output">&nbsp;</span></div>
               <div class="terminal-line"><span class="terminal-prompt">R1#</span><span class="terminal-input"></span><span class="terminal-cursor"></span></div>
             </div>
-          </div>
-          <div style="margin-top: 12px; display: flex; gap: 8px; align-items: center;">
-            <span style="font-family: var(--font-mono); font-size: var(--fs-sm); color: var(--green); white-space: nowrap;">R1#</span>
-            <input type="text" class="input" placeholder="Type a command... (Enter to send, ↑↓ for history)" id="cli-input" style="font-family: var(--font-mono); flex: 1;" onkeydown="handleCLIKey(event)" />
-            <button class="btn btn-primary" onclick="sendCLI()">Send</button>
+            <div class="cli-command"><span class="terminal-prompt">R1#</span><input type="text" class="input" placeholder="พิมพ์คำสั่ง IOS" id="cli-input" onkeydown="handleCLIKey(event)" /><button class="btn btn-sm" onclick="sendCLI()">Send ↵</button></div>
+            </div>
+            <div class="cli-footer"><span>ผลคำสั่งถูกบันทึกใน History โดยไม่เก็บเนื้อหา CLI</span><span>Enter ส่ง · ↑↓ ย้อนคำสั่ง · Esc ล้างช่องพิมพ์</span></div>
           </div>
         </div>
       </div>
@@ -1617,6 +1604,7 @@
 
     function handleCLIKey(e) {
       if (e.key === 'Enter') { sendCLI(); return; }
+      if (e.key === 'Escape') { e.target.value = ''; return; }
       if (e.key === 'ArrowUp') {
         e.preventDefault();
         if (cliHistoryIdx < cliHistory.length - 1) {
@@ -1656,6 +1644,18 @@
     function clearTerminal() {
       const body = document.getElementById('terminal-body');
       body.innerHTML = `<div class="terminal-line"><span class="terminal-prompt">R1#</span><span class="terminal-input"></span><span class="terminal-cursor"></span></div>`;
+    }
+
+    function toggleCliSession() {
+      const status = document.getElementById('cli-status');
+      const button = document.getElementById('cli-session-button');
+      const input = document.getElementById('cli-input');
+      const connected = button.textContent.trim() === 'Disconnect';
+      status.className = connected ? 'badge badge-gray' : 'badge badge-green';
+      status.innerHTML = `<span class="badge-dot"></span> ${connected ? 'Disconnected' : 'Connected'}`;
+      button.textContent = connected ? 'Reconnect' : 'Disconnect';
+      input.disabled = connected;
+      if (connected) input.value = '';
     }
 
     function copyTerminal() {

@@ -249,21 +249,24 @@ export interface OspfNetworkConfig {
   subnet_mask: string
   area: number
 }
+export type OspfNetworkState = Omit<OspfNetworkConfig, 'router_id'> & { router_id: string | null }
 
-export interface OspfNetworkUpdate { current: OspfNetworkConfig; desired: OspfNetworkConfig }
-export interface OspfProcessConfig { process_id: number; router_id?: string; networks: OspfNetworkConfig[] }
-export interface OspfStateResponse { node_id: string; enabled: boolean; process_id?: number; router_id?: string; networks: OspfNetworkConfig[]; collected_at: string }
+export interface OspfNetworkUpdate { current: OspfNetworkState; desired: OspfNetworkConfig }
+export interface OspfProcessConfig { process_id: number; router_id?: string | null; networks: OspfNetworkState[] }
+export interface OspfStateResponse { node_id: string; enabled: boolean; process_id?: number; router_id?: string | null; networks: OspfNetworkState[]; collected_at: string }
 
 export interface EigrpNetworkConfig { as_number: number; router_id: string; network: string; subnet_mask: string }
-export interface EigrpNetworkUpdate { current: EigrpNetworkConfig; desired: EigrpNetworkConfig }
-export interface EigrpProcessConfig { as_number: number; router_id?: string; networks: EigrpNetworkConfig[]; no_auto_summary: boolean }
-export interface EigrpStateResponse { node_id: string; enabled: boolean; as_number?: number; router_id?: string; networks: EigrpNetworkConfig[]; no_auto_summary: boolean; collected_at: string }
+export type EigrpNetworkState = Omit<EigrpNetworkConfig, 'router_id'> & { router_id: string | null }
+export interface EigrpNetworkUpdate { current: EigrpNetworkState; desired: EigrpNetworkConfig }
+export interface EigrpProcessConfig { as_number: number; router_id?: string | null; networks: EigrpNetworkState[]; no_auto_summary: boolean }
+export interface EigrpStateResponse { node_id: string; enabled: boolean; as_number?: number; router_id?: string | null; networks: EigrpNetworkState[]; no_auto_summary: boolean; collected_at: string }
 export interface BgpNeighborConfig { local_as: number; router_id: string; neighbor_ip: string; remote_as: number; description?: string }
+export type BgpNeighborState = Omit<BgpNeighborConfig, 'router_id'> & { router_id: string | null }
 export interface BgpNetworkConfig { local_as: number; network: string; subnet_mask: string }
-export interface BgpNeighborUpdate { current: BgpNeighborConfig; desired: BgpNeighborConfig }
+export interface BgpNeighborUpdate { current: BgpNeighborState; desired: BgpNeighborConfig }
 export interface BgpNetworkUpdate { current: BgpNetworkConfig; desired: BgpNetworkConfig }
-export interface BgpProcessConfig { local_as: number; router_id?: string; neighbors: BgpNeighborConfig[]; networks: BgpNetworkConfig[] }
-export interface BgpStateResponse { node_id: string; enabled: boolean; local_as?: number; router_id?: string; neighbors: BgpNeighborConfig[]; networks: BgpNetworkConfig[]; collected_at: string }
+export interface BgpProcessConfig { local_as: number; router_id?: string | null; neighbors: BgpNeighborState[]; networks: BgpNetworkConfig[] }
+export interface BgpStateResponse { node_id: string; enabled: boolean; local_as?: number; router_id?: string | null; neighbors: BgpNeighborState[]; networks: BgpNetworkConfig[]; collected_at: string }
 
 export interface PreviewResponse {
   operation_id: string
@@ -710,7 +713,7 @@ export async function getOspfState(id: string): Promise<OspfStateResponse> {
 }
 
 /** สร้าง preview เพิ่ม/ลบ OSPF network */
-export async function previewOspfNetwork(id: string, payload: OspfNetworkConfig, remove = false): Promise<PreviewResponse> {
+export async function previewOspfNetwork(id: string, payload: OspfNetworkConfig | OspfNetworkState, remove = false): Promise<PreviewResponse> {
   try { const action = remove ? 'remove/' : ''; const { data } = await api.post<PreviewResponse>(`/nodes/${id}/config/ospf/network/${action}preview`, payload); return data } catch (error) { throw extractApiError(error as AxiosError) }
 }
 
@@ -735,7 +738,7 @@ export async function getEigrpState(id: string): Promise<EigrpStateResponse> {
 }
 
 /** สร้าง preview เพิ่ม/ลบ EIGRP network */
-export async function previewEigrpNetwork(id: string, payload: EigrpNetworkConfig, remove = false): Promise<PreviewResponse> {
+export async function previewEigrpNetwork(id: string, payload: EigrpNetworkConfig | EigrpNetworkState, remove = false): Promise<PreviewResponse> {
   try { const action = remove ? 'remove/' : ''; const { data } = await api.post<PreviewResponse>(`/nodes/${id}/config/eigrp/network/${action}preview`, payload); return data } catch (error) { throw extractApiError(error as AxiosError) }
 }
 
@@ -760,7 +763,7 @@ export async function getBgpState(id: string): Promise<BgpStateResponse> {
 }
 
 /** สร้าง preview เพิ่ม/ลบ BGP neighbor */
-export async function previewBgpNeighbor(id: string, payload: BgpNeighborConfig, remove = false): Promise<PreviewResponse> {
+export async function previewBgpNeighbor(id: string, payload: BgpNeighborConfig | BgpNeighborState, remove = false): Promise<PreviewResponse> {
   try { const action = remove ? 'remove/' : ''; const { data } = await api.post<PreviewResponse>(`/nodes/${id}/config/bgp/neighbor/${action}preview`, payload); return data } catch (error) { throw extractApiError(error as AxiosError) }
 }
 

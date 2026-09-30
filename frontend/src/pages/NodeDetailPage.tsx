@@ -1,12 +1,13 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { AlertCircle, CheckCircle2, ChevronLeft, Copy, Eye, Loader2, RefreshCw, Save, X } from 'lucide-react'
+import { AlertCircle, CheckCircle2, ChevronLeft, Copy, Eye, Loader2, RefreshCw, Save, Trash2, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { z } from 'zod'
 import { Topbar } from '../components/shared/Topbar'
 import { StatusBadge } from '../components/shared/StatusBadge'
+import { CliTerminal } from '../components/CliTerminal'
 import {
   applyInterface,
   applyInterfaceAdmin,
@@ -20,6 +21,7 @@ import {
   applyOspf,
   applyRip,
   applyStaticRoute,
+  deleteNode,
   getInterfaceCurrent,
   getInterfaceCapabilities,
   getDeviceCapabilities,
@@ -63,8 +65,10 @@ import {
   type ApplyResponse,
   type AccessPortConfig,
   type EigrpNetworkConfig,
+  type EigrpNetworkState,
   type EigrpStateResponse,
   type BgpNeighborConfig,
+  type BgpNeighborState,
   type BgpNetworkConfig,
   type BgpStateResponse,
   type DeviceCapabilitiesResponse,
@@ -74,6 +78,7 @@ import {
   type LoopbackConfig,
   type PreviewResponse,
   type OspfNetworkConfig,
+  type OspfNetworkState,
   type OspfStateResponse,
   type RipNetworkConfig,
   type RipStateResponse,
@@ -176,8 +181,9 @@ const ospfNetworkSchema = z.object({
 })
 type OspfNetworkForm = z.infer<typeof ospfNetworkSchema>
 type OspfPreviewIntent =
-  | { mode: 'add' | 'remove'; payload: OspfNetworkConfig }
-  | { mode: 'update'; current: OspfNetworkConfig; desired: OspfNetworkConfig }
+  | { mode: 'add'; payload: OspfNetworkConfig }
+  | { mode: 'remove'; payload: OspfNetworkState }
+  | { mode: 'update'; current: OspfNetworkState; desired: OspfNetworkConfig }
   | { mode: 'remove_process'; state: OspfStateResponse }
 
 const eigrpNetworkSchema = z.object({
@@ -188,15 +194,16 @@ const eigrpNetworkSchema = z.object({
 })
 type EigrpNetworkForm = z.infer<typeof eigrpNetworkSchema>
 type EigrpPreviewIntent =
-  | { mode: 'add' | 'remove'; payload: EigrpNetworkConfig }
-  | { mode: 'update'; current: EigrpNetworkConfig; desired: EigrpNetworkConfig }
+  | { mode: 'add'; payload: EigrpNetworkConfig }
+  | { mode: 'remove'; payload: EigrpNetworkState }
+  | { mode: 'update'; current: EigrpNetworkState; desired: EigrpNetworkConfig }
   | { mode: 'remove_process'; state: EigrpStateResponse }
 
 const bgpNeighborSchema = z.object({ local_as: z.number().int().min(1).max(4294967295), router_id: z.string().regex(/^(?:\d{1,3}\.){3}\d{1,3}$/, 'ระบุ Router ID IPv4'), neighbor_ip: z.string().regex(/^(?:\d{1,3}\.){3}\d{1,3}$/, 'ระบุ Neighbor IPv4'), remote_as: z.number().int().min(1).max(4294967295), description: z.string().max(240).optional() })
 const bgpNetworkSchema = z.object({ local_as: z.number().int().min(1).max(4294967295), network: z.string().regex(/^(?:\d{1,3}\.){3}\d{1,3}$/, 'ระบุ IPv4 network'), subnet_mask: z.string().regex(/^\d{1,3}(\.\d{1,3}){3}$/, 'ใช้ dotted decimal netmask') })
 type BgpNeighborForm = z.infer<typeof bgpNeighborSchema>
 type BgpNetworkForm = z.infer<typeof bgpNetworkSchema>
-type BgpPreviewIntent = { mode: 'neighbor_add' | 'neighbor_remove'; payload: BgpNeighborConfig } | { mode: 'neighbor_update'; current: BgpNeighborConfig; desired: BgpNeighborConfig } | { mode: 'network_add' | 'network_remove'; payload: BgpNetworkConfig } | { mode: 'network_update'; current: BgpNetworkConfig; desired: BgpNetworkConfig } | { mode: 'remove_process'; state: BgpStateResponse }
+type BgpPreviewIntent = { mode: 'neighbor_add'; payload: BgpNeighborConfig } | { mode: 'neighbor_remove'; payload: BgpNeighborState } | { mode: 'neighbor_update'; current: BgpNeighborState; desired: BgpNeighborConfig } | { mode: 'network_add' | 'network_remove'; payload: BgpNetworkConfig } | { mode: 'network_update'; current: BgpNetworkConfig; desired: BgpNetworkConfig } | { mode: 'remove_process'; state: BgpStateResponse }
 
 const SHOW_COMMANDS = [
   'show ip interface brief',
@@ -214,15 +221,15 @@ function getApiMessage(error: unknown): string {
   }
   return 'เกิดข้อผิดพลาด กรุณาลองใหม่'
 }
-
 /**
  * NodeDetailPage
- * หน้ารายละเอียด node ตาม Design: interface, routing, show และ CLI placeholder
+ * หน้ารายละเอียด node ตาม Design: interface, routing, show และ CLI
  * การแก้ config ต้องผ่าน preview drawer ก่อน Apply ทุกครั้ง
  */
 export function NodeDetailPage({ collapsed, setCollapsed }: { collapsed: boolean; setCollapsed: (value: boolean) => void }) {
   const { id } = useParams<{ id: string }>()
   const nodeId = id ?? ''
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [activeTab, setActiveTab] = useState<'interfaces' | 'routing' | 'show' | 'cli'>('interfaces')
   const [preview, setPreview] = useState<PreviewResponse | null>(null)
@@ -268,7 +275,7 @@ export function NodeDetailPage({ collapsed, setCollapsed }: { collapsed: boolean
   const healthQuery = useQuery({
     queryKey: ['node-health', nodeId],
     queryFn: () => testNodeConnection(nodeId),
-    enabled: Boolean(nodeId),
+    enabled: Boolean(nodeId) && activeTab !== 'cli',
     retry: false,
     refetchInterval: 30_000,
     refetchIntervalInBackground: false,
@@ -434,7 +441,7 @@ export function NodeDetailPage({ collapsed, setCollapsed }: { collapsed: boolean
         return previewBgpProcessRemove(nodeId, { local_as: intent.state.local_as, router_id: intent.state.router_id, neighbors: intent.state.neighbors, networks: intent.state.networks })
       }
       if (intent.mode === 'neighbor_update') return previewBgpNeighborUpdate(nodeId, { current: intent.current, desired: intent.desired })
-      if (intent.mode === 'neighbor_add' || intent.mode === 'neighbor_remove') return previewBgpNeighbor(nodeId, intent.payload as BgpNeighborConfig, intent.mode === 'neighbor_remove')
+      if (intent.mode === 'neighbor_add' || intent.mode === 'neighbor_remove') return previewBgpNeighbor(nodeId, intent.payload, intent.mode === 'neighbor_remove')
       if (intent.mode === 'network_update') return previewBgpNetworkUpdate(nodeId, { current: intent.current, desired: intent.desired })
       return previewBgpNetwork(nodeId, intent.payload as BgpNetworkConfig, intent.mode === 'network_remove')
     },
@@ -503,6 +510,15 @@ export function NodeDetailPage({ collapsed, setCollapsed }: { collapsed: boolean
     },
   })
 
+  const deleteMutation = useMutation({
+    mutationFn: () => deleteNode(nodeId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['nodes'] })
+      queryClient.invalidateQueries({ queryKey: ['history'] })
+      navigate('/')
+    },
+  })
+
   const form = useForm<InterfaceForm>({
     resolver: zodResolver(interfaceSchema),
     defaultValues: { interface_name: '', ip_address: '', subnet_mask: '255.255.255.0', description: '', admin_up: true },
@@ -568,6 +584,16 @@ export function NodeDetailPage({ collapsed, setCollapsed }: { collapsed: boolean
     setCopied(true)
     window.setTimeout(() => setCopied(false), 1500)
   }
+  const handleDelete = () => {
+    if (nodeQuery.data && window.confirm(`ยืนยันลบ Node ${nodeQuery.data.hostname} ออกจากแอปหรือไม่? การลบนี้ไม่เปลี่ยน config บนอุปกรณ์ และ History เดิมยังอยู่`)) {
+      deleteMutation.mutate()
+    }
+  }
+  const refreshAfterCliCommand = () => {
+    for (const key of ['history', 'show', 'static-routes', 'rip-state', 'ospf-state', 'eigrp-state', 'bgp-state', 'vlans']) {
+      queryClient.invalidateQueries({ queryKey: [key] })
+    }
+  }
 
   if (nodeQuery.isLoading) {
     return <PageShell><LoadingState /></PageShell>
@@ -614,14 +640,17 @@ export function NodeDetailPage({ collapsed, setCollapsed }: { collapsed: boolean
               type="button"
               className="btn-secondary btn-sm flex items-center gap-2"
               onClick={() => connectionMutation.mutate()}
-              disabled={connectionMutation.isPending}
+              disabled={connectionMutation.isPending || activeTab === 'cli'}
             >
               {connectionMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
               {connectionMutation.isPending ? 'Testing...' : 'Reconnect'}
             </button>
-            <button type="button" className="btn-secondary btn-sm" onClick={() => savePreviewMutation.mutate()} disabled={savePreviewMutation.isPending} title="สร้าง preview ก่อนบันทึก startup-config">{savePreviewMutation.isPending ? 'กำลังสร้าง Preview...' : 'Save Config'}</button>
+            <button type="button" className="btn-secondary btn-sm" onClick={() => savePreviewMutation.mutate()} disabled={savePreviewMutation.isPending || activeTab === 'cli'} title="สร้าง preview ก่อนบันทึก startup-config">{savePreviewMutation.isPending ? 'กำลังสร้าง Preview...' : 'Save Config'}</button>
+            <button type="button" className="btn-secondary btn-sm text-red-700 border-red-200" onClick={handleDelete} disabled={deleteMutation.isPending || activeTab === 'cli'} title={activeTab === 'cli' ? 'Disconnect CLI ก่อนลบ Node' : undefined}><Trash2 className="w-4 h-4" />{deleteMutation.isPending ? 'กำลังลบ...' : 'Delete Node'}</button>
           </div>
         </section>
+
+        {deleteMutation.isError && <p role="alert" className="text-sm text-red-700">ลบ Node ไม่สำเร็จ: {getApiMessage(deleteMutation.error)}</p>}
 
         {connectionMutation.data && (
           <div className={`rounded-lg border p-3 text-sm flex items-center gap-2 ${connectionMutation.data.overall_status === 'success' ? 'bg-green-50 border-green-200 text-green-800' : 'bg-red-50 border-red-200 text-red-800'}`} role="status">
@@ -708,7 +737,7 @@ export function NodeDetailPage({ collapsed, setCollapsed }: { collapsed: boolean
         {activeTab === 'show' && (
           <ShowPanel selectedCommand={selectedShow} result={showResult} isLoading={showMutation.isPending} error={showMutation.error} onRun={handleShow} onCopy={copyOutput} copied={copied} />
         )}
-        {activeTab === 'cli' && <ComingSoon title="CLI Terminal" detail="เวอร์ชันนี้ยังไม่เปิดใช้คำสั่ง CLI โดยตรง โปรดใช้ฟอร์มตั้งค่าเพื่อดู Preview และยืนยันก่อนส่งคำสั่ง" />}
+        {activeTab === 'cli' && <CliTerminal nodeId={nodeId} hostname={node.hostname} endpoint={node.host ?? node.serial_port ?? 'Local serial'} transport={node.transport} onCommandResult={refreshAfterCliCommand} />}
       </main>
 
       {drawerOpen && preview && (
@@ -724,7 +753,6 @@ export function NodeDetailPage({ collapsed, setCollapsed }: { collapsed: boolean
     </PageShell>
   )
 }
-
 function PageShell({ children }: { children: React.ReactNode }) {
   return <div className="flex-1 flex flex-col min-h-screen"><div className="flex-1">{children}</div></div>
 }
@@ -979,7 +1007,17 @@ function routeToConfig(route: StaticRouteEntry): StaticRouteConfig {
   }
 }
 
-/** แผง Routing ตาม Design; เปิดเฉพาะ protocol ที่ผ่าน phase gate แล้ว */
+/** สรุปผลตรวจโปรโตคอลโดยแยกสถานะอ่านไม่สำเร็จออกจากยังไม่ตั้งค่า */
+function RoutingSummaryItem({ name, enabled, count, unit, loading, error }: { name: string; enabled?: boolean; count: number; unit: string; loading: boolean; error: boolean }) {
+  const label = error ? 'อ่านไม่ได้' : loading && enabled === undefined ? 'กำลังตรวจ' : enabled ? `${count} ${unit}` : 'ยังไม่ตั้งค่า'
+  const color = error ? 'text-red-700' : loading && enabled === undefined ? 'text-amber-700' : enabled ? 'text-green-700' : 'text-gray-600'
+  return <span className={`inline-flex items-center gap-2 text-sm ${color}`}>
+    {error ? <AlertCircle className="w-4 h-4" /> : loading && enabled === undefined ? <Loader2 className="w-4 h-4 animate-spin" /> : enabled ? <CheckCircle2 className="w-4 h-4" /> : <span aria-hidden="true" className="w-2 h-2 rounded-full bg-gray-400" />}
+    {name} <strong className="font-mono">{label}</strong>
+  </span>
+}
+
+/** แผง Routing อ่าน running-config ได้แม้ interface ยังไม่มี IP */
 function RoutingPanel({ nodeId, onStaticPreview, onRipPreview, onOspfPreview, onEigrpPreview, onBgpPreview, isPreviewing, previewError }: { nodeId: string; onStaticPreview: (intent: StaticPreviewIntent) => void; onRipPreview: (intent: RipPreviewIntent) => void; onOspfPreview: (intent: OspfPreviewIntent) => void; onEigrpPreview: (intent: EigrpPreviewIntent) => void; onBgpPreview: (intent: BgpPreviewIntent) => void; isPreviewing: boolean; previewError: Error | null }) {
   const [protocol, setProtocol] = useState<'bgp' | 'eigrp' | 'ospf' | 'rip' | 'static'>('static')
   const [editing, setEditing] = useState<StaticRouteEntry | null>(null)
@@ -1035,11 +1073,11 @@ function RoutingPanel({ nodeId, onStaticPreview, onRipPreview, onOspfPreview, on
     <section className="card p-0 overflow-hidden">
       <div className="flex flex-wrap items-center gap-4 px-5 py-4 bg-gray-50 border-b border-gray-200">
         <h3 className="font-semibold text-gray-900">Routing Table</h3>
-        <span className={`inline-flex items-center gap-2 text-sm ${ospfQuery.data?.enabled ? 'text-green-700' : 'text-gray-500'}`}><span className={`w-2 h-2 rounded-full ${ospfQuery.data?.enabled ? 'bg-green-500' : 'bg-gray-400'}`} />OSPF <strong className="font-mono">{ospfQuery.data?.enabled ? `${ospfQuery.data.networks.length} networks` : 'Off'}</strong></span>
-        <span className={`inline-flex items-center gap-2 text-sm ${eigrpQuery.data?.enabled ? 'text-green-700' : 'text-gray-500'}`}><span className={`w-2 h-2 rounded-full ${eigrpQuery.data?.enabled ? 'bg-green-500' : 'bg-gray-400'}`} />EIGRP <strong className="font-mono">{eigrpQuery.data?.enabled ? `${eigrpQuery.data.networks.length} networks` : 'Off'}</strong></span>
-        <span className={`inline-flex items-center gap-2 text-sm ${bgpQuery.data?.enabled ? 'text-green-700' : 'text-gray-500'}`}><span className={`w-2 h-2 rounded-full ${bgpQuery.data?.enabled ? 'bg-green-500' : 'bg-gray-400'}`} />BGP <strong className="font-mono">{bgpQuery.data?.enabled ? `${bgpQuery.data.neighbors.length} peers` : 'Off'}</strong></span>
-        <span className={`inline-flex items-center gap-2 text-sm ${ripQuery.data?.enabled ? 'text-green-700' : 'text-gray-500'}`}><span className={`w-2 h-2 rounded-full ${ripQuery.data?.enabled ? 'bg-green-500' : 'bg-gray-400'}`} />RIP <strong className="font-mono">{ripQuery.data?.enabled ? `${ripQuery.data.networks.length} networks` : 'Off'}</strong></span>
-        <span className="inline-flex items-center gap-2 text-sm text-amber-700"><span className="w-2 h-2 rounded-full bg-amber-500" />Static <strong className="font-mono">{routes.length} routes</strong></span>
+        <RoutingSummaryItem name="OSPF" enabled={ospfQuery.data?.enabled} count={ospfQuery.data?.networks.length ?? 0} unit="networks" loading={ospfQuery.isPending} error={ospfQuery.isError} />
+        <RoutingSummaryItem name="EIGRP" enabled={eigrpQuery.data?.enabled} count={eigrpQuery.data?.networks.length ?? 0} unit="networks" loading={eigrpQuery.isPending} error={eigrpQuery.isError} />
+        <RoutingSummaryItem name="BGP" enabled={bgpQuery.data?.enabled} count={bgpQuery.data?.neighbors.length ?? 0} unit="peers" loading={bgpQuery.isPending} error={bgpQuery.isError} />
+        <RoutingSummaryItem name="RIP" enabled={ripQuery.data?.enabled} count={ripQuery.data?.networks.length ?? 0} unit="networks" loading={ripQuery.isPending} error={ripQuery.isError} />
+        <RoutingSummaryItem name="Static" enabled={routes.length > 0} count={routes.length} unit="routes" loading={routesQuery.isPending} error={routesQuery.isError} />
       </div>
       <p className="px-5 py-3 text-sm text-gray-600">เลือกโปรโตคอลเพื่อดูค่าที่อ่านจากอุปกรณ์ เพิ่มหรือแก้รายการผ่าน Preview และยืนยัน Apply ก่อนส่งคำสั่ง</p>
       <div className="flex overflow-x-auto border-b border-gray-200 px-3" role="tablist" aria-label="Routing protocols">
@@ -1047,7 +1085,6 @@ function RoutingPanel({ nodeId, onStaticPreview, onRipPreview, onOspfPreview, on
         <button type="button" role="tab" aria-selected={protocol === 'eigrp'} onClick={() => setProtocol('eigrp')} className={`px-4 py-3 text-sm ${protocol === 'eigrp' ? 'font-medium text-accent-DEFAULT border-b-2 border-accent-DEFAULT' : 'text-gray-600'}`}>EIGRP <span className={`ml-1 badge ${eigrpQuery.data?.enabled ? 'badge-green' : 'badge-gray'}`}>{eigrpQuery.data?.networks.length ?? 0}</span></button>
         <button type="button" role="tab" aria-selected={protocol === 'bgp'} onClick={() => setProtocol('bgp')} className={`px-4 py-3 text-sm ${protocol === 'bgp' ? 'font-medium text-accent-DEFAULT border-b-2 border-accent-DEFAULT' : 'text-gray-600'}`}>BGP <span className={`ml-1 badge ${bgpQuery.data?.enabled ? 'badge-green' : 'badge-gray'}`}>{bgpQuery.data?.neighbors.length ?? 0}</span></button>
         <button type="button" role="tab" aria-selected={protocol === 'rip'} onClick={() => setProtocol('rip')} className={`px-4 py-3 text-sm ${protocol === 'rip' ? 'font-medium text-accent-DEFAULT border-b-2 border-accent-DEFAULT' : 'text-gray-600'}`}>RIP <span className={`ml-1 badge ${ripQuery.data?.enabled ? 'badge-green' : 'badge-gray'}`}>{ripQuery.data?.networks.length ?? 0}</span></button>
-        {['EIGRP', 'BGP'].map((name) => <button key={name} type="button" role="tab" disabled className="px-4 py-3 text-sm text-gray-400 cursor-not-allowed" title="ยังไม่ผ่าน phase gate">{name} <span className="ml-1 text-xs">0</span></button>)}
         <button type="button" role="tab" aria-selected={protocol === 'static'} onClick={() => setProtocol('static')} className={`px-4 py-3 text-sm ${protocol === 'static' ? 'font-medium text-accent-DEFAULT border-b-2 border-accent-DEFAULT' : 'text-gray-600'}`}>Static <span className="ml-1 badge badge-amber">{routes.length}</span></button>
       </div>
 
@@ -1167,19 +1204,20 @@ function RipRoutingContent({ state, isLoading, error, onRefresh, onPreview, isPr
 }
 
 function OspfRoutingContent({ state, isLoading, error, onRefresh, onPreview, isPreviewing, previewError }: { state: OspfStateResponse | null; isLoading: boolean; error: Error | null; onRefresh: () => void; onPreview: (intent: OspfPreviewIntent) => void; isPreviewing: boolean; previewError: Error | null }) {
-  const [editing, setEditing] = useState<OspfNetworkConfig | null>(null)
+  const [editing, setEditing] = useState<OspfNetworkState | null>(null)
   const form = useForm<OspfNetworkForm>({ resolver: zodResolver(ospfNetworkSchema), defaultValues: { process_id: 1, router_id: '', network: '10.0.23.0', subnet_mask: '255.255.255.252', area: 0 } })
   useEffect(() => { if (!editing && state?.enabled) form.reset({ process_id: state.process_id ?? 1, router_id: state.router_id ?? '', network: '', subnet_mask: '255.255.255.0', area: 0 }) }, [editing, form, state])
   const reset = () => { setEditing(null); form.reset({ process_id: state?.process_id ?? 1, router_id: state?.router_id ?? '', network: '', subnet_mask: '255.255.255.0', area: 0 }) }
-  const edit = (entry: OspfNetworkConfig) => { setEditing(entry); form.reset(entry) }
+  const edit = (entry: OspfNetworkState) => { setEditing(entry); form.reset({ ...entry, router_id: entry.router_id ?? '' }) }
   const submit = (data: OspfNetworkForm) => {
     const desired: OspfNetworkConfig = data
     if (editing) onPreview({ mode: 'update', current: editing, desired })
     else onPreview({ mode: 'add', payload: desired })
   }
   return <div className="p-5 space-y-5">
-    <div className="flex flex-wrap items-center justify-between gap-3"><div><div className="flex items-center gap-3"><h4 className="text-lg font-semibold">OSPF — Open Shortest Path First</h4><span className={`badge ${state?.enabled ? 'badge-green' : 'badge-gray'}`}><span className="badge-dot" />{state?.enabled ? 'Active' : 'Off'}</span></div><p className="text-sm text-gray-500">{state?.enabled ? `Process ${state.process_id} · Router-ID ${state.router_id} · ${state.networks.length} networks` : 'ยังไม่ได้กำหนด OSPF process'}</p></div><div className="flex gap-2"><button type="button" className="btn-secondary btn-sm" onClick={onRefresh} disabled={isLoading}>Refresh</button>{state?.enabled && <button type="button" className="btn-ghost btn-sm text-red-600" onClick={() => onPreview({ mode: 'remove_process', state })}>Remove Protocol</button>}</div></div>
+    <div className="flex flex-wrap items-center justify-between gap-3"><div><div className="flex items-center gap-3"><h4 className="text-lg font-semibold">OSPF — Open Shortest Path First</h4><span className={`badge ${state?.enabled ? 'badge-green' : 'badge-gray'}`}><span className="badge-dot" />{state?.enabled ? 'Active' : 'Off'}</span></div><p className="text-sm text-gray-500">{state?.enabled ? `Process ${state.process_id} · Router-ID ${state.router_id ?? 'ยังไม่กำหนด'} · ${state.networks.length} networks` : 'ยังไม่ได้กำหนด OSPF process'}</p></div><div className="flex gap-2"><button type="button" className="btn-secondary btn-sm" onClick={onRefresh} disabled={isLoading}>Refresh</button>{state?.enabled && <button type="button" className="btn-ghost btn-sm text-red-600" onClick={() => onPreview({ mode: 'remove_process', state })}>Remove Protocol</button>}</div></div>
     <p className="text-sm text-gray-600">กำหนด Process ID, Router ID และเครือข่ายใน Area ที่ต้องการ ระบบคำนวณ Wildcard Mask จาก Netmask ให้ก่อน Preview</p>
+    {state?.enabled && !state.router_id && <p className="text-sm text-amber-800">พบ OSPF process แล้ว แต่ยังไม่กำหนด Router ID; สามารถอ่านและลบรายการเดิมได้ หากจะเพิ่มหรือแก้ไขให้ระบุ Router ID ก่อน Preview</p>}
     {error && <div role="alert" className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-3">โหลด OSPF ไม่สำเร็จ: {getApiMessage(error)}</div>}
     <div className="table-wrap overflow-auto"><table className="ds-table min-w-[720px]"><thead><tr><th>Network</th><th>Netmask</th><th>Area</th><th>Status</th><th className="text-right">Actions</th></tr></thead><tbody>{state?.networks.length ? state.networks.map((entry) => <tr key={`${entry.network}-${entry.subnet_mask}-${entry.area}`}><td className="font-mono text-xs">{entry.network}</td><td className="font-mono text-xs">{entry.subnet_mask}</td><td className="font-mono text-xs">{entry.area}</td><td><span className="badge badge-green"><span className="badge-dot" />Applied</span></td><td><div className="flex justify-end gap-1"><button type="button" className="btn-ghost btn-sm" onClick={() => edit(entry)}>Edit</button><button type="button" className="btn-ghost btn-sm text-red-600" onClick={() => onPreview({ mode: 'remove', payload: entry })}>Delete</button></div></td></tr>) : <tr><td colSpan={5} className="text-center text-gray-500 py-10">{isLoading ? 'กำลังโหลด OSPF...' : 'ยังไม่มี OSPF network'}</td></tr>}</tbody></table></div>
     {editing && <div className="rounded-lg border border-blue-300 bg-blue-50 px-4 py-3 text-sm text-blue-800 flex justify-between"><span>กำลังแก้ network <strong className="font-mono">{editing.network}</strong></span><button type="button" className="btn-ghost btn-sm" onClick={reset}>Cancel</button></div>}
@@ -1189,16 +1227,17 @@ function OspfRoutingContent({ state, isLoading, error, onRefresh, onPreview, isP
 
 /** ฟอร์ม EIGRP ตาม Design: อ่าน actual state ก่อนแก้และใช้ preview ทุก mutation */
 function EigrpRoutingContent({ state, isLoading, error, onRefresh, onPreview, isPreviewing, previewError }: { state: EigrpStateResponse | null; isLoading: boolean; error: Error | null; onRefresh: () => void; onPreview: (intent: EigrpPreviewIntent) => void; isPreviewing: boolean; previewError: Error | null }) {
-  const [editing, setEditing] = useState<EigrpNetworkConfig | null>(null)
+  const [editing, setEditing] = useState<EigrpNetworkState | null>(null)
   const form = useForm<EigrpNetworkForm>({ resolver: zodResolver(eigrpNetworkSchema), defaultValues: { as_number: 100, router_id: '', network: '10.0.23.0', subnet_mask: '255.255.255.252' } })
   useEffect(() => { if (!editing && state?.enabled) form.reset({ as_number: state.as_number ?? 100, router_id: state.router_id ?? '', network: '', subnet_mask: '255.255.255.0' }) }, [editing, form, state])
   const reset = () => { setEditing(null); form.reset({ as_number: state?.as_number ?? 100, router_id: state?.router_id ?? '', network: '', subnet_mask: '255.255.255.0' }) }
   const submit = (data: EigrpNetworkForm) => { const desired: EigrpNetworkConfig = data; if (editing) onPreview({ mode: 'update', current: editing, desired }); else onPreview({ mode: 'add', payload: desired }) }
   return <div className="p-5 space-y-5">
-    <div className="flex flex-wrap items-center justify-between gap-3"><div><div className="flex items-center gap-3"><h4 className="text-lg font-semibold">EIGRP — Enhanced Interior Gateway Routing Protocol</h4><span className={`badge ${state?.enabled ? 'badge-green' : 'badge-gray'}`}><span className="badge-dot" />{state?.enabled ? 'Active' : 'Off'}</span></div><p className="text-sm text-gray-500">{state?.enabled ? `AS ${state.as_number} · Router-ID ${state.router_id} · ${state.networks.length} networks` : 'ยังไม่ได้กำหนด EIGRP process'}</p></div><div className="flex gap-2"><button type="button" className="btn-secondary btn-sm" onClick={onRefresh} disabled={isLoading}>Refresh</button>{state?.enabled && <button type="button" className="btn-ghost btn-sm text-red-600" onClick={() => onPreview({ mode: 'remove_process', state })}>Remove Protocol</button>}</div></div>
+    <div className="flex flex-wrap items-center justify-between gap-3"><div><div className="flex items-center gap-3"><h4 className="text-lg font-semibold">EIGRP — Enhanced Interior Gateway Routing Protocol</h4><span className={`badge ${state?.enabled ? 'badge-green' : 'badge-gray'}`}><span className="badge-dot" />{state?.enabled ? 'Active' : 'Off'}</span></div><p className="text-sm text-gray-500">{state?.enabled ? `AS ${state.as_number} · Router-ID ${state.router_id ?? 'ยังไม่กำหนด'} · ${state.networks.length} networks` : 'ยังไม่ได้กำหนด EIGRP process'}</p></div><div className="flex gap-2"><button type="button" className="btn-secondary btn-sm" onClick={onRefresh} disabled={isLoading}>Refresh</button>{state?.enabled && <button type="button" className="btn-ghost btn-sm text-red-600" onClick={() => onPreview({ mode: 'remove_process', state })}>Remove Protocol</button>}</div></div>
     <p className="text-sm text-gray-600">ตรวจหมายเลข AS และเครือข่ายที่ประกาศก่อนแก้ไข ระบบคำนวณ Wildcard Mask และตั้งค่า no auto-summary ให้</p>
+    {state?.enabled && !state.router_id && <p className="text-sm text-amber-800">พบ EIGRP process แล้ว แต่ยังไม่กำหนด Router ID; สามารถอ่านและลบรายการเดิมได้ หากจะเพิ่มหรือแก้ไขให้ระบุ Router ID ก่อน Preview</p>}
     {error && <div role="alert" className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-3">โหลด EIGRP ไม่สำเร็จ: {getApiMessage(error)}</div>}
-    <div className="table-wrap overflow-auto"><table className="ds-table min-w-[660px]"><thead><tr><th>Network</th><th>Netmask</th><th>Status</th><th className="text-right">Actions</th></tr></thead><tbody>{state?.networks.length ? state.networks.map((entry) => <tr key={`${entry.network}-${entry.subnet_mask}`}><td className="font-mono text-xs">{entry.network}</td><td className="font-mono text-xs">{entry.subnet_mask}</td><td><span className="badge badge-green"><span className="badge-dot" />Applied</span></td><td><div className="flex justify-end gap-1"><button type="button" className="btn-ghost btn-sm" onClick={() => { setEditing(entry); form.reset(entry) }}>Edit</button><button type="button" className="btn-ghost btn-sm text-red-600" onClick={() => onPreview({ mode: 'remove', payload: entry })}>Delete</button></div></td></tr>) : <tr><td colSpan={4} className="text-center text-gray-500 py-10">{isLoading ? 'กำลังโหลด EIGRP...' : 'ยังไม่มี EIGRP network'}</td></tr>}</tbody></table></div>
+    <div className="table-wrap overflow-auto"><table className="ds-table min-w-[660px]"><thead><tr><th>Network</th><th>Netmask</th><th>Status</th><th className="text-right">Actions</th></tr></thead><tbody>{state?.networks.length ? state.networks.map((entry) => <tr key={`${entry.network}-${entry.subnet_mask}`}><td className="font-mono text-xs">{entry.network}</td><td className="font-mono text-xs">{entry.subnet_mask}</td><td><span className="badge badge-green"><span className="badge-dot" />Applied</span></td><td><div className="flex justify-end gap-1"><button type="button" className="btn-ghost btn-sm" onClick={() => { setEditing(entry); form.reset({ ...entry, router_id: entry.router_id ?? '' }) }}>Edit</button><button type="button" className="btn-ghost btn-sm text-red-600" onClick={() => onPreview({ mode: 'remove', payload: entry })}>Delete</button></div></td></tr>) : <tr><td colSpan={4} className="text-center text-gray-500 py-10">{isLoading ? 'กำลังโหลด EIGRP...' : 'ยังไม่มี EIGRP network'}</td></tr>}</tbody></table></div>
     {editing && <div className="rounded-lg border border-blue-300 bg-blue-50 px-4 py-3 text-sm text-blue-800 flex justify-between"><span>กำลังแก้ network <strong className="font-mono">{editing.network}</strong></span><button type="button" className="btn-ghost btn-sm" onClick={reset}>Cancel</button></div>}
     <form onSubmit={form.handleSubmit(submit)} className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-4"><h5 className="font-semibold text-sm">{editing ? 'Edit Network' : state?.enabled ? 'Add Network' : 'Enable EIGRP & Add Network'}</h5><div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3"><Field label="AS Number" error={form.formState.errors.as_number?.message}><input type="number" {...form.register('as_number', { valueAsNumber: true })} className="input-field" /></Field><Field label="Router ID" error={form.formState.errors.router_id?.message}><input {...form.register('router_id')} className="input-field font-mono" placeholder="2.2.2.2" /></Field><Field label="Network" error={form.formState.errors.network?.message}><input {...form.register('network')} className="input-field font-mono" placeholder="10.0.23.0" /></Field><Field label="Netmask" error={form.formState.errors.subnet_mask?.message}><input {...form.register('subnet_mask')} className="input-field font-mono" /></Field></div><div className="rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-2 text-xs text-cyan-800">Wildcard mask จะคำนวณจาก Netmask ใน backend และระบบจะตั้ง <code>no auto-summary</code></div>{previewError && <div role="alert" className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-3">{getApiMessage(previewError)}</div>}<div className="flex gap-2"><button type="submit" className="btn-primary btn-sm" disabled={isPreviewing}>{editing ? 'Preview Update' : 'Preview Changes'}</button>{editing && <button type="button" className="btn-secondary btn-sm" onClick={reset}>Cancel</button>}</div></form>
   </div>
@@ -1206,16 +1245,17 @@ function EigrpRoutingContent({ state, isLoading, error, onRefresh, onPreview, is
 
 /** ฟอร์ม BGP แยก neighbor และ advertised network ตาม Design reference */
 function BgpRoutingContent({ state, isLoading, error, onRefresh, onPreview, isPreviewing, previewError }: { state: BgpStateResponse | null; isLoading: boolean; error: Error | null; onRefresh: () => void; onPreview: (intent: BgpPreviewIntent) => void; isPreviewing: boolean; previewError: Error | null }) {
-  const [editingNeighbor, setEditingNeighbor] = useState<BgpNeighborConfig | null>(null)
+  const [editingNeighbor, setEditingNeighbor] = useState<BgpNeighborState | null>(null)
   const [editingNetwork, setEditingNetwork] = useState<BgpNetworkConfig | null>(null)
   const neighborForm = useForm<BgpNeighborForm>({ resolver: zodResolver(bgpNeighborSchema), defaultValues: { local_as: 65001, router_id: '', neighbor_ip: '10.0.23.2', remote_as: 65002, description: '' } })
   const networkForm = useForm<BgpNetworkForm>({ resolver: zodResolver(bgpNetworkSchema), defaultValues: { local_as: 65001, network: '', subnet_mask: '255.255.255.0' } })
   useEffect(() => { if (state?.enabled) { neighborForm.setValue('local_as', state.local_as ?? 65001); neighborForm.setValue('router_id', state.router_id ?? ''); networkForm.setValue('local_as', state.local_as ?? 65001) } }, [neighborForm, networkForm, state])
   return <div className="p-5 space-y-5">
-    <div className="flex flex-wrap items-center justify-between gap-3"><div><div className="flex items-center gap-3"><h4 className="text-lg font-semibold">BGP — Border Gateway Protocol</h4><span className={`badge ${state?.enabled ? 'badge-green' : 'badge-gray'}`}><span className="badge-dot" />{state?.enabled ? 'Active' : 'Off'}</span></div><p className="text-sm text-gray-500">{state?.enabled ? `Local AS ${state.local_as} · Router-ID ${state.router_id}` : 'เพิ่ม neighbor เพื่อเปิด BGP process'}</p></div><div className="flex gap-2"><button type="button" className="btn-secondary btn-sm" onClick={onRefresh} disabled={isLoading}>Refresh</button>{state?.enabled && <button type="button" className="btn-ghost btn-sm text-red-600" onClick={() => onPreview({ mode: 'remove_process', state })}>Remove Protocol</button>}</div></div>
+    <div className="flex flex-wrap items-center justify-between gap-3"><div><div className="flex items-center gap-3"><h4 className="text-lg font-semibold">BGP — Border Gateway Protocol</h4><span className={`badge ${state?.enabled ? 'badge-green' : 'badge-gray'}`}><span className="badge-dot" />{state?.enabled ? 'Active' : 'Off'}</span></div><p className="text-sm text-gray-500">{state?.enabled ? `Local AS ${state.local_as} · Router-ID ${state.router_id ?? 'ยังไม่กำหนด'}` : 'เพิ่ม neighbor เพื่อเปิด BGP process'}</p></div><div className="flex gap-2"><button type="button" className="btn-secondary btn-sm" onClick={onRefresh} disabled={isLoading}>Refresh</button>{state?.enabled && <button type="button" className="btn-ghost btn-sm text-red-600" onClick={() => onPreview({ mode: 'remove_process', state })}>Remove Protocol</button>}</div></div>
     <p className="text-sm text-gray-600">ตั้งค่า Neighbor ก่อน แล้วจึงเพิ่มเครือข่ายที่ต้องการประกาศ การมี Neighbor ในรายการไม่ได้ยืนยันว่า Peer เชื่อมต่อแล้ว</p>
+    {state?.enabled && !state.router_id && <p className="text-sm text-amber-800">พบ BGP process แล้ว แต่ยังไม่กำหนด Router ID; neighbor เดิมยังแสดงตาม running-config หากจะเพิ่มหรือแก้ไข neighbor ให้ระบุ Router ID ก่อน Preview</p>}
     {error && <div role="alert" className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-3">โหลด BGP ไม่สำเร็จ: {getApiMessage(error)}</div>}
-    <div className="table-wrap overflow-auto"><table className="ds-table min-w-[700px]"><thead><tr><th>Neighbor</th><th>Remote AS</th><th>Description</th><th className="text-right">Actions</th></tr></thead><tbody>{state?.neighbors.length ? state.neighbors.map((entry) => <tr key={entry.neighbor_ip}><td className="font-mono text-xs">{entry.neighbor_ip}</td><td className="font-mono text-xs">{entry.remote_as}</td><td>{entry.description ?? '—'}</td><td className="text-right"><button type="button" className="btn-ghost btn-sm" onClick={() => { setEditingNeighbor(entry); neighborForm.reset(entry) }}>Edit</button><button type="button" className="btn-ghost btn-sm text-red-600" onClick={() => onPreview({ mode: 'neighbor_remove', payload: entry })}>Delete</button></td></tr>) : <tr><td colSpan={4} className="text-center text-gray-500 py-8">{isLoading ? 'กำลังโหลด BGP...' : 'ยังไม่มี BGP neighbor'}</td></tr>}</tbody></table></div>
+    <div className="table-wrap overflow-auto"><table className="ds-table min-w-[700px]"><thead><tr><th>Neighbor</th><th>Remote AS</th><th>Description</th><th className="text-right">Actions</th></tr></thead><tbody>{state?.neighbors.length ? state.neighbors.map((entry) => <tr key={entry.neighbor_ip}><td className="font-mono text-xs">{entry.neighbor_ip}</td><td className="font-mono text-xs">{entry.remote_as}</td><td>{entry.description ?? '—'}</td><td className="text-right"><button type="button" className="btn-ghost btn-sm" onClick={() => { setEditingNeighbor(entry); neighborForm.reset({ ...entry, router_id: entry.router_id ?? '' }) }}>Edit</button><button type="button" className="btn-ghost btn-sm text-red-600" onClick={() => onPreview({ mode: 'neighbor_remove', payload: entry })}>Delete</button></td></tr>) : <tr><td colSpan={4} className="text-center text-gray-500 py-8">{isLoading ? 'กำลังโหลด BGP...' : 'ยังไม่มี BGP neighbor'}</td></tr>}</tbody></table></div>
     <form onSubmit={neighborForm.handleSubmit((data) => editingNeighbor ? onPreview({ mode: 'neighbor_update', current: editingNeighbor, desired: data }) : onPreview({ mode: 'neighbor_add', payload: data }))} className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-4"><h5 className="font-semibold text-sm">{editingNeighbor ? 'Edit Neighbor' : state?.enabled ? 'Add Neighbor' : 'Enable BGP & Add Neighbor'}</h5><div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3"><Field label="Local AS" error={neighborForm.formState.errors.local_as?.message}><input type="number" {...neighborForm.register('local_as', { valueAsNumber: true })} className="input-field" /></Field><Field label="Router ID" error={neighborForm.formState.errors.router_id?.message}><input {...neighborForm.register('router_id')} className="input-field font-mono" /></Field><Field label="Neighbor IP" error={neighborForm.formState.errors.neighbor_ip?.message}><input {...neighborForm.register('neighbor_ip')} className="input-field font-mono" /></Field><Field label="Remote AS" error={neighborForm.formState.errors.remote_as?.message}><input type="number" {...neighborForm.register('remote_as', { valueAsNumber: true })} className="input-field" /></Field><Field label="Description"><input {...neighborForm.register('description')} className="input-field" /></Field></div><button type="submit" className="btn-primary btn-sm" disabled={isPreviewing}>{editingNeighbor ? 'Preview Update' : 'Preview Neighbor'}</button>{editingNeighbor && <button type="button" className="btn-secondary btn-sm ml-2" onClick={() => { setEditingNeighbor(null); neighborForm.reset() }}>Cancel</button>}</form>
     <div className="table-wrap overflow-auto"><table className="ds-table min-w-[600px]"><thead><tr><th>Advertised Network</th><th>Netmask</th><th className="text-right">Actions</th></tr></thead><tbody>{state?.networks.length ? state.networks.map((entry) => <tr key={`${entry.network}-${entry.subnet_mask}`}><td className="font-mono text-xs">{entry.network}</td><td className="font-mono text-xs">{entry.subnet_mask}</td><td className="text-right"><button type="button" className="btn-ghost btn-sm" onClick={() => { setEditingNetwork(entry); networkForm.reset(entry) }}>Edit</button><button type="button" className="btn-ghost btn-sm text-red-600" onClick={() => onPreview({ mode: 'network_remove', payload: entry })}>Delete</button></td></tr>) : <tr><td colSpan={3} className="text-center text-gray-500 py-8">ยังไม่มี advertised network</td></tr>}</tbody></table></div>
     <form onSubmit={networkForm.handleSubmit((data) => editingNetwork ? onPreview({ mode: 'network_update', current: editingNetwork, desired: data }) : onPreview({ mode: 'network_add', payload: data }))} className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-4"><h5 className="font-semibold text-sm">{editingNetwork ? 'Edit Advertised Network' : 'Add Advertised Network'}</h5><div className="grid grid-cols-1 md:grid-cols-3 gap-3"><Field label="Local AS" error={networkForm.formState.errors.local_as?.message}><input type="number" {...networkForm.register('local_as', { valueAsNumber: true })} className="input-field" disabled={!state?.enabled} /></Field><Field label="Network" error={networkForm.formState.errors.network?.message}><input {...networkForm.register('network')} className="input-field font-mono" disabled={!state?.enabled} /></Field><Field label="Netmask" error={networkForm.formState.errors.subnet_mask?.message}><input {...networkForm.register('subnet_mask')} className="input-field font-mono" disabled={!state?.enabled} /></Field></div>{previewError && <div role="alert" className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-3">{getApiMessage(previewError)}</div>}<button type="submit" className="btn-primary btn-sm" disabled={isPreviewing || !state?.enabled}>{editingNetwork ? 'Preview Update' : 'Preview Network'}</button>{editingNetwork && <button type="button" className="btn-secondary btn-sm ml-2" onClick={() => { setEditingNetwork(null); networkForm.reset() }}>Cancel</button>}</form>
@@ -1237,8 +1277,4 @@ function ShowPanel({ selectedCommand, result, isLoading, error, onRun, onCopy, c
 function PreviewDrawer({ preview, applyResult, isApplying, error, onClose, onApply }: { preview: PreviewResponse; applyResult: ApplyResponse | null; isApplying: boolean; error: Error | null; onClose: () => void; onApply: () => void }) {
   const resultLabel = applyResult?.overall_status === 'success' ? 'สำเร็จ' : applyResult?.overall_status === 'partial_failed' ? 'สำเร็จบางส่วน' : 'ไม่สำเร็จ'
   return <><div className="drawer-overlay" onClick={onClose} /><aside className="drawer-panel" role="dialog" aria-modal="true" aria-label="Command Preview"><div className="p-5 border-b border-gray-200 flex items-center justify-between"><div><h3 className="font-semibold">Command Preview</h3><p className="text-xs text-gray-500 mt-1">ตรวจคำสั่งก่อนส่งไปยังอุปกรณ์ · Preview หมดอายุ {new Date(preview.expires_at).toLocaleTimeString('th-TH')}</p></div><button type="button" className="btn-icon hover:bg-gray-100" onClick={onClose} aria-label="ปิด"><X className="w-5 h-5" /></button></div><div className="p-5 flex-1 overflow-auto space-y-4"><div className="terminal-area rounded-lg p-4 text-sm space-y-1">{preview.commands.map((command, index) => <div key={`${command}-${index}`} className="flex gap-3"><span className="text-gray-500 select-none w-5 text-right">{index + 1}</span><code>{command}</code></div>)}</div>{preview.warnings.length > 0 && <ul className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-3 list-disc list-inside">{preview.warnings.map((warning) => <li key={warning}>{warning}</li>)}</ul>}{error && <div role="alert" className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-3">{getApiMessage(error)}</div>}{applyResult && <div className={`rounded-lg border p-3 text-sm ${applyResult.overall_status === 'success' ? 'bg-green-50 border-green-200 text-green-800' : 'bg-red-50 border-red-200 text-red-800'}`}><p className="font-medium flex items-center gap-2">{applyResult.overall_status === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}ผลการส่งคำสั่ง: {resultLabel}</p>{applyResult.results.map((item) => <div key={item.command} className="mt-2 font-mono text-xs">{item.status === 'success' ? '✓' : '✕'} {item.command}</div>)}</div>}</div><div className="p-5 border-t border-gray-200 flex gap-2"><button type="button" className="btn-secondary flex-1" onClick={onClose}>Cancel</button><button type="button" className="btn-primary flex-1 flex justify-center gap-2" disabled={isApplying || Boolean(applyResult)} onClick={onApply}>{isApplying ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}Apply</button></div></aside></>
-}
-
-function ComingSoon({ title, detail }: { title: string; detail: string }) {
-  return <section className="card py-16 text-center"><AlertCircle className="w-8 h-8 text-amber-500 mx-auto mb-3" /><h3 className="font-semibold text-gray-900">{title}</h3><p className="text-sm text-gray-500 mt-1">{detail}</p></section>
 }

@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import json
 import uuid
 from datetime import UTC, datetime
 
@@ -337,18 +338,31 @@ async def get_node(node_id: str) -> NodeResponse:
     response_class=Response,
 )
 async def delete_node(node_id: str):
-    """ลบ node ออกจาก DB — ต้องยืนยันจาก frontend ก่อนเรียก endpoint นี้"""
-    with get_db() as conn:
-        result = conn.execute("DELETE FROM nodes WHERE id = ?", (node_id,))
-    if result.rowcount == 0:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "NODE_NOT_FOUND",
-                "message_th": f"ไม่พบ node ID: {node_id}",
-                "correlation_id": _new_correlation_id(),
-            },
-        )
+    """ลบ Node และ preview ที่อ้างถึง โดยเก็บ command history ย้อนหลังไว้"""
+    correlation_id = _new_correlation_id()
+    lock = await get_node_lock(node_id)
+    async with lock:
+        with get_db() as conn:
+            node = conn.execute("SELECT hostname FROM nodes WHERE id = ?", (node_id,)).fetchone()
+            if node is None:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail={"code": "NODE_NOT_FOUND", "message_th": "ไม่พบ Node นี้", "correlation_id": correlation_id},
+                )
+            # Preview/operation ผูก FK กับ Node; history เป็น audit snapshot แยกต่างหาก.
+            conn.execute("DELETE FROM operations WHERE node_id = ?", (node_id,))
+            conn.execute("DELETE FROM nodes WHERE id = ?", (node_id,))
+            conn.execute(
+                """INSERT INTO command_history
+                   (id, correlation_id, node_id, node_hostname, operation_id, command_type,
+                    commands_json, result_json, overall_status, created_at)
+                   VALUES (?, ?, ?, ?, NULL, ?, ?, ?, ?, ?)""",
+                (str(uuid.uuid4()), correlation_id, node_id, node["hostname"], "Node Delete",
+                 json.dumps(["Delete Node"]),
+                 json.dumps([{"command": "Delete Node", "status": "success",
+                              "output": "ลบข้อมูลเชื่อมต่อแล้ว; config บนอุปกรณ์ไม่เปลี่ยน", "error_code": None}], ensure_ascii=False),
+                 "success", _now_utc()),
+            )
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 

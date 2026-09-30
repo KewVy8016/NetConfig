@@ -18,6 +18,7 @@ from backend.models import (
     ApplyRequest,
     ApplyResponse,
     BgpNeighborConfig,
+    BgpNeighborState,
     BgpNeighborUpdate,
     BgpNetworkConfig,
     BgpNetworkUpdate,
@@ -26,6 +27,7 @@ from backend.models import (
     CommandResult,
     DeviceCapabilitiesResponse,
     EigrpNetworkConfig,
+    EigrpNetworkState,
     EigrpNetworkUpdate,
     EigrpProcessConfig,
     EigrpStateResponse,
@@ -39,6 +41,7 @@ from backend.models import (
     LoopbackConfig,
     LoopbackRemoveConfig,
     OspfNetworkConfig,
+    OspfNetworkState,
     OspfNetworkUpdate,
     OspfProcessConfig,
     OspfStateResponse,
@@ -1010,18 +1013,17 @@ async def _read_ospf_state(node_id: str, node_row: dict, correlation_id: str) ->
     return parse_ospf_config(output)
 
 
-def _ospf_signature(payload: OspfNetworkConfig) -> tuple[str, str, int]:
+def _ospf_signature(payload: OspfNetworkConfig | OspfNetworkState) -> tuple[str, str, int]:
     """คืน identity ของ OSPF network โดยไม่รวม process/router ID"""
     return payload.network, payload.subnet_mask, payload.area
 
 
-def _ospf_entries(state: dict) -> list[OspfNetworkConfig]:
+def _ospf_entries(state: dict) -> list[OspfNetworkState]:
     """แปลง parser state เป็น typed OSPF entries สำหรับ response/compare"""
     if not state["enabled"]:
         return []
     process_id = int(state["process_id"])
-    router_id = str(state["router_id"] or "0.0.0.0")
-    return [OspfNetworkConfig(process_id=process_id, router_id=router_id, **entry) for entry in state["networks"]]
+    return [OspfNetworkState(process_id=process_id, router_id=state["router_id"], **entry) for entry in state["networks"]]
 
 
 @router.get("/nodes/{node_id}/routing/ospf", response_model=OspfStateResponse)
@@ -1049,7 +1051,7 @@ async def preview_ospf_network(node_id: str, payload: OspfNetworkConfig) -> Prev
 
 
 @router.post("/nodes/{node_id}/config/ospf/network/remove/preview", response_model=PreviewResponse)
-async def preview_ospf_network_remove(node_id: str, payload: OspfNetworkConfig) -> PreviewResponse:
+async def preview_ospf_network_remove(node_id: str, payload: OspfNetworkState) -> PreviewResponse:
     """ยืนยัน actual OSPF state ก่อนสร้าง inverse preview"""
     correlation_id = str(uuid.uuid4())
     state = await _read_ospf_state(node_id, _get_node_row(node_id, correlation_id), correlation_id)
@@ -1101,18 +1103,17 @@ async def _read_eigrp_state(node_id: str, node_row: dict, correlation_id: str) -
     return parse_eigrp_config(output)
 
 
-def _eigrp_signature(payload: EigrpNetworkConfig) -> tuple[str, str]:
+def _eigrp_signature(payload: EigrpNetworkConfig | EigrpNetworkState) -> tuple[str, str]:
     """คืน identity ของ EIGRP network โดยไม่รวม process/router ID"""
     return payload.network, payload.subnet_mask
 
 
-def _eigrp_entries(state: dict) -> list[EigrpNetworkConfig]:
+def _eigrp_entries(state: dict) -> list[EigrpNetworkState]:
     """แปลง parser state เป็น typed EIGRP entries สำหรับ response/compare"""
     if not state["enabled"]:
         return []
     as_number = int(state["as_number"])
-    router_id = str(state["router_id"] or "0.0.0.0")
-    return [EigrpNetworkConfig(as_number=as_number, router_id=router_id, **entry) for entry in state["networks"]]
+    return [EigrpNetworkState(as_number=as_number, router_id=state["router_id"], **entry) for entry in state["networks"]]
 
 
 @router.get("/nodes/{node_id}/routing/eigrp", response_model=EigrpStateResponse)
@@ -1140,7 +1141,7 @@ async def preview_eigrp_network(node_id: str, payload: EigrpNetworkConfig) -> Pr
 
 
 @router.post("/nodes/{node_id}/config/eigrp/network/remove/preview", response_model=PreviewResponse)
-async def preview_eigrp_network_remove(node_id: str, payload: EigrpNetworkConfig) -> PreviewResponse:
+async def preview_eigrp_network_remove(node_id: str, payload: EigrpNetworkState) -> PreviewResponse:
     """ยืนยัน actual EIGRP state ก่อนสร้าง inverse preview"""
     correlation_id = str(uuid.uuid4())
     state = await _read_eigrp_state(node_id, _get_node_row(node_id, correlation_id), correlation_id)
@@ -1196,7 +1197,7 @@ def _bgp_state_response(node_id: str, state: dict) -> BgpStateResponse:
     """แปลง parser state เป็น typed BGP response โดยคืนเฉพาะ resource ที่ parser ยืนยันได้"""
     local_as = state["local_as"]
     router_id = state["router_id"]
-    neighbors = [] if not state["enabled"] or local_as is None or router_id is None else [BgpNeighborConfig(local_as=int(local_as), router_id=str(router_id), **entry) for entry in state["neighbors"]]
+    neighbors = [] if not state["enabled"] or local_as is None else [BgpNeighborState(local_as=int(local_as), router_id=router_id, **entry) for entry in state["neighbors"]]
     networks = [] if not state["enabled"] or local_as is None else [BgpNetworkConfig(local_as=int(local_as), **entry) for entry in state["networks"]]
     return BgpStateResponse.model_validate({"node_id": node_id, "collected_at": _now().isoformat(), **state, "neighbors": neighbors, "networks": networks})
 
@@ -1227,7 +1228,7 @@ async def preview_bgp_neighbor(node_id: str, payload: BgpNeighborConfig) -> Prev
 
 
 @router.post("/nodes/{node_id}/config/bgp/neighbor/remove/preview", response_model=PreviewResponse)
-async def preview_bgp_neighbor_remove(node_id: str, payload: BgpNeighborConfig) -> PreviewResponse:
+async def preview_bgp_neighbor_remove(node_id: str, payload: BgpNeighborState) -> PreviewResponse:
     """ยืนยัน actual BGP state ก่อนสร้าง inverse preview ของ neighbor"""
     correlation_id = str(uuid.uuid4())
     state = await _read_bgp_state(node_id, _get_node_row(node_id, correlation_id), correlation_id)

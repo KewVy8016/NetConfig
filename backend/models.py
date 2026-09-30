@@ -728,10 +728,26 @@ class OspfNetworkConfig(BaseModel):
         return self
 
 
+class OspfNetworkState(BaseModel):
+    """OSPF network ที่อ่านจากอุปกรณ์; router ID อาจยังไม่ถูกกำหนด"""
+
+    process_id: int = Field(..., ge=1, le=65535)
+    router_id: str | None = None
+    network: str
+    subnet_mask: str
+    area: int = Field(..., ge=0, le=4_294_967_295)
+
+    @model_validator(mode="after")
+    def validate_read_network(self) -> OspfNetworkState:
+        """ใช้กฎ IPv4 เดียวกับ input โดยไม่สร้าง router ID ปลอม"""
+        OspfNetworkConfig.model_validate({**self.model_dump(), "router_id": self.router_id or "1.1.1.1"})
+        return self
+
+
 class OspfNetworkUpdate(BaseModel):
     """คำขอแก้ OSPF network โดยระบุค่าเดิมและค่าที่ต้องการ"""
 
-    current: OspfNetworkConfig
+    current: OspfNetworkConfig | OspfNetworkState
     desired: OspfNetworkConfig
 
     @model_validator(mode="after")
@@ -747,7 +763,7 @@ class OspfProcessConfig(BaseModel):
 
     process_id: int = Field(..., ge=1, le=65535)
     router_id: str | None = None
-    networks: list[OspfNetworkConfig] = Field(default_factory=list)
+    networks: list[OspfNetworkState] = Field(default_factory=list)
 
 
 class OspfStateResponse(BaseModel):
@@ -757,7 +773,7 @@ class OspfStateResponse(BaseModel):
     enabled: bool
     process_id: int | None = None
     router_id: str | None = None
-    networks: list[OspfNetworkConfig] = Field(default_factory=list)
+    networks: list[OspfNetworkState] = Field(default_factory=list)
     collected_at: str
 
 
@@ -805,10 +821,25 @@ class EigrpNetworkConfig(BaseModel):
         return self
 
 
+class EigrpNetworkState(BaseModel):
+    """EIGRP network ที่อ่านจากอุปกรณ์โดย router ID อาจว่าง"""
+
+    as_number: int = Field(..., ge=1, le=65535)
+    router_id: str | None = None
+    network: str
+    subnet_mask: str
+
+    @model_validator(mode="after")
+    def validate_read_network(self) -> EigrpNetworkState:
+        """ตรวจ network และ mask ตามสัญญา input โดยไม่เติม router ID ในผลอ่าน"""
+        EigrpNetworkConfig.model_validate({**self.model_dump(), "router_id": self.router_id or "1.1.1.1"})
+        return self
+
+
 class EigrpNetworkUpdate(BaseModel):
     """คำขอแก้ EIGRP network โดยลบค่าเดิมก่อนเพิ่มใหม่"""
 
-    current: EigrpNetworkConfig
+    current: EigrpNetworkConfig | EigrpNetworkState
     desired: EigrpNetworkConfig
 
     @model_validator(mode="after")
@@ -824,7 +855,7 @@ class EigrpProcessConfig(BaseModel):
 
     as_number: int = Field(..., ge=1, le=65535)
     router_id: str | None = None
-    networks: list[EigrpNetworkConfig] = Field(default_factory=list)
+    networks: list[EigrpNetworkState] = Field(default_factory=list)
     no_auto_summary: bool
 
 
@@ -835,7 +866,7 @@ class EigrpStateResponse(BaseModel):
     enabled: bool
     as_number: int | None = None
     router_id: str | None = None
-    networks: list[EigrpNetworkConfig] = Field(default_factory=list)
+    networks: list[EigrpNetworkState] = Field(default_factory=list)
     no_auto_summary: bool = False
     collected_at: str
 
@@ -870,6 +901,22 @@ class BgpNeighborConfig(BaseModel):
         if value is not None and any(char in value for char in "\r\n"):
             raise ValueError("description ห้ามมีบรรทัดใหม่")
         return value or None
+
+
+class BgpNeighborState(BaseModel):
+    """BGP neighbor ที่อ่านได้แม้ IOS ยังไม่กำหนด router ID"""
+
+    local_as: int = Field(..., ge=1, le=4294967295)
+    router_id: str | None = None
+    neighbor_ip: str
+    remote_as: int = Field(..., ge=1, le=4294967295)
+    description: str | None = Field(default=None, max_length=240)
+
+    @model_validator(mode="after")
+    def validate_read_neighbor(self) -> BgpNeighborState:
+        """ตรวจ neighbor ด้วยกฎเดิมโดยไม่เปลี่ยนค่า router ID ที่อ่านได้"""
+        BgpNeighborConfig.model_validate({**self.model_dump(), "router_id": self.router_id or "1.1.1.1"})
+        return self
 
 
 class BgpNetworkConfig(BaseModel):
@@ -914,7 +961,7 @@ class BgpNetworkConfig(BaseModel):
 class BgpNeighborUpdate(BaseModel):
     """คำขอแก้ BGP neighbor โดยลบค่าเดิมก่อนเพิ่มใหม่"""
 
-    current: BgpNeighborConfig
+    current: BgpNeighborConfig | BgpNeighborState
     desired: BgpNeighborConfig
 
     @model_validator(mode="after")
@@ -944,7 +991,7 @@ class BgpProcessConfig(BaseModel):
 
     local_as: int = Field(..., ge=1, le=4294967295)
     router_id: str | None = None
-    neighbors: list[BgpNeighborConfig] = Field(default_factory=list)
+    neighbors: list[BgpNeighborState] = Field(default_factory=list)
     networks: list[BgpNetworkConfig] = Field(default_factory=list)
 
 
@@ -955,7 +1002,7 @@ class BgpStateResponse(BaseModel):
     enabled: bool
     local_as: int | None = None
     router_id: str | None = None
-    neighbors: list[BgpNeighborConfig] = Field(default_factory=list)
+    neighbors: list[BgpNeighborState] = Field(default_factory=list)
     networks: list[BgpNetworkConfig] = Field(default_factory=list)
     collected_at: str
 

@@ -1,8 +1,15 @@
-import { defineConfig } from 'vite'
+// แยกการเปิดหน้า React ออกจาก API ที่ใช้เส้นทาง /nodes และ /history ร่วมกัน
+import { defineConfig, type ProxyOptions } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 
-// https://vitejs.dev/config/
+// การรีเฟรช/เปิด URL โดยตรงต้องได้ HTML; API และ WebSocket ยังไป backend
+const bypassPageNavigation: ProxyOptions['bypass'] = (request) => {
+  if (request.method === 'GET' && !request.headers.upgrade && request.headers.accept?.includes('text/html')) {
+    return '/index.html'
+  }
+}
+
 export default defineConfig({
   plugins: [react()],
   resolve: {
@@ -13,9 +20,8 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      // Proxy API requests to FastAPI backend
-      '/nodes': 'http://127.0.0.1:8000',
-      '/history': 'http://127.0.0.1:8000',
+      '/nodes': { target: 'http://127.0.0.1:8000', ws: true, bypass: bypassPageNavigation },
+      '/history': { target: 'http://127.0.0.1:8000', bypass: bypassPageNavigation },
       '/health': 'http://127.0.0.1:8000',
     },
   },

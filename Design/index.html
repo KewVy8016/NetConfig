@@ -1001,6 +1001,7 @@
                   Router · Telnet
                 </div>
               </div>
+              <button class="btn btn-ghost btn-sm" style="color: var(--red); margin-top: 8px;" onclick="event.stopPropagation(); confirm('ลบ Node R1 ออกจากแอปหรือไม่? History เดิมยังอยู่')">ลบ Node</button>
             </div>
 
             <!-- R2 -->
@@ -1101,7 +1102,7 @@
                   <td>Router</td>
                   <td><span class="badge badge-blue">Telnet</span></td>
                   <td><span class="badge badge-green"><span class="badge-dot"></span> Connected</span></td>
-                  <td style="text-align: right;"><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation()">Configure</button></td>
+                  <td style="text-align: right;"><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation()">Configure</button><button class="btn btn-ghost btn-sm" style="color: var(--red);" onclick="event.stopPropagation(); confirm('ลบ Node นี้ออกจากแอปหรือไม่? History เดิมยังอยู่')">ลบ</button></td>
                 </tr>
                 <tr onclick="location.href='node-detail.html'" style="cursor:pointer">
                   <td><strong>R2</strong></td>

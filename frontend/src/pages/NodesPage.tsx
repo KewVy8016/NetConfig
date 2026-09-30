@@ -1,10 +1,10 @@
-import { useQueries, useQuery } from '@tanstack/react-query'
-import { Plus, Search, Server, ShieldAlert, Terminal } from 'lucide-react'
+import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Plus, Search, Server, ShieldAlert, Terminal, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Topbar } from '../components/shared/Topbar'
 import { StatusBadge } from '../components/shared/StatusBadge'
-import { listNodes, type NodeStatus, testNodeConnection } from '../lib/api'
+import { deleteNode, listNodes, type NodeResponse, type NodeStatus, testNodeConnection } from '../lib/api'
 
 interface NodesPageProps {
   collapsed: boolean
@@ -15,6 +15,19 @@ export function NodesPage({ collapsed, setCollapsed }: NodesPageProps) {
   const [search, setSearch] = useState('')
   const [view, setView] = useState<'card' | 'table'>('card')
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteNode(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['nodes'] })
+      queryClient.invalidateQueries({ queryKey: ['history'] })
+    },
+  })
+  const confirmDelete = (node: NodeResponse) => {
+    if (window.confirm(`ยืนยันลบ Node ${node.hostname} ออกจากแอปหรือไม่? Config บนอุปกรณ์จะไม่เปลี่ยน และ History เดิมยังอยู่`)) {
+      deleteMutation.mutate(node.id)
+    }
+  }
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['nodes', search],
@@ -48,6 +61,7 @@ export function NodesPage({ collapsed, setCollapsed }: NodesPageProps) {
 
       <main className="p-6">
         <p className="mb-4 text-sm text-gray-600">จัดการอุปกรณ์ที่บันทึกไว้และเปิดหน้าตั้งค่า สถานะเป็นผลตรวจล่าสุด โดยระบบตรวจซ้ำทุก 30 วินาทีขณะเปิดหน้านี้</p>
+        {deleteMutation.isError && <p role="alert" className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">ลบ Node ไม่สำเร็จ กรุณาลองใหม่</p>}
         {/* Toolbar */}
         <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center mb-6">
           <div className="relative w-full sm:w-72">
@@ -142,6 +156,7 @@ export function NodesPage({ collapsed, setCollapsed }: NodesPageProps) {
                       {node.transport}
                     </span>
                   </div>
+                  <button type="button" className="btn-ghost btn-sm text-red-700 mt-2" onClick={(event) => { event.stopPropagation(); confirmDelete(node) }} disabled={deleteMutation.isPending}><Trash2 className="w-4 h-4" />ลบ Node</button>
                 </div>
               </div>
             ))}
@@ -157,6 +172,7 @@ export function NodesPage({ collapsed, setCollapsed }: NodesPageProps) {
                   <th>Protocol</th>
                   <th>Status</th>
                   <th className="text-right">Added</th>
+                  <th className="text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -170,6 +186,7 @@ export function NodesPage({ collapsed, setCollapsed }: NodesPageProps) {
                     <td className="text-right text-gray-500">
                       {new Date(node.created_at).toLocaleDateString()}
                     </td>
+                    <td className="text-right"><button type="button" className="btn-ghost btn-sm text-red-700" onClick={(event) => { event.stopPropagation(); confirmDelete(node) }} disabled={deleteMutation.isPending} aria-label={`ลบ Node ${node.hostname}`}><Trash2 className="w-4 h-4" />ลบ</button></td>
                   </tr>
                 ))}
               </tbody>
